@@ -24,9 +24,20 @@ You'll then have an up and running pubnix bulletin board. Just make sure all oth
 ARGS instructions:
 
 ```
+Usage of ./bb:
+  -a string
+        Add input to board you were last accessing
+  -c string
+        Title of new board you want to create (one word only)
+  -l int
+        Index of board you want to load (default 99999)
+  -p
+        Print all boards
+        No args for interactive mode
+        Only 1 arg at a time allowed
 ```
 
-GUI Instructions:
+Interactive Instructions:
 ```
 for INDEX section:
 	new - create a new board i.e 'new topictitle'
