@@ -268,6 +268,7 @@ func (l *Last) Load() {
 
 ///Moderator & Mod METHODS //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//Only the administrator can be a moderator at the moment
 type Mod struct {
 	Name         []string
 	Boardarchive []string
