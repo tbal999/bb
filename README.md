@@ -21,3 +21,44 @@ Then run "./bb mod" to initialise all the folders.
 
 You'll then have an up and running pubnix bulletin board. Just make sure all other users have access to the application. Maybe place it in the binary folder.
 
+ARGS instructions:
+
+```
+```
+
+GUI Instructions:
+```
+for INDEX section:
+	new - create a new board i.e 'new topictitle'
+	del - delete a board by index. 
+		If nobody else has accessed it - you can delete it. 
+	        Otherwise, you need superuser permission.
+	fil - filter index by search string e.g YYYY-MM or Title
+	pin+ - pin a board by index
+	pin- - unpin a board by index
+	q - to quit, or use ctrl-c
+	r - refresh the index section
+	w - scroll up the index
+	d - scroll down the index
+	nothing - also refresh the index section
+	
+for CHAT section:
+	q - exits back to index section
+	r - refresh the board you are on
+	fil - filter chat by specific string e.g YYYY-MM or substring
+	w - scroll up the board
+	d - scroll down the board
+	anon - make message anonymous
+	anything else - types text to board
+	nothing - also exits back to index section
+	ctrl-c to quit
+	
+FYI:
+	- Boards glow cyan when new content is posted
+	- New boards glow green.
+	- You can comment other people via @ sign i.e @person
+		they will see message highlighted
+	- If you are on a board and new content is posted on another board, 
+		you'll see '^new' beside author name
+```
+
