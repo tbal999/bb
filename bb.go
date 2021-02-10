@@ -33,8 +33,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
-	"mvdan.cc/xurls/v2"
+	"github.com/fatih/color" //to add colour to output
+	"mvdan.cc/xurls/v2" //to parse URLs
 )
 
 var (
