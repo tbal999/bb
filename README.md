@@ -3,6 +3,7 @@ a pubix bulletin board in go
 
 Built this over the last 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
+We wanted a custom board. So I built one. That's it!
 
 Instructions:
 
