@@ -10,7 +10,7 @@ We wanted a custom board. So I built one. That's it!
 Instructions:
 
 ```
-(ROW 42 and 43)
+(ROW 42 and 43 in main.go)
 	admin      = "username" //set this to your home folder name on your pubnix
 	boardtitle = "Title of the board" //set this to whatever you want
 ```
