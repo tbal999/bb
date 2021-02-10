@@ -60,9 +60,9 @@ var (
 	lastname     = "bbl4st.json"
 	anonname     = "bban0n.json"
 	pinname      = "bbp1n.json"
-	back         int
-	maximum      int
-	minimum      int
+	back         int                             //board scroll logic
+	maximum      int                             //board scroll logic
+	minimum      int                             //board scroll logic
 )
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
