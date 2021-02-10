@@ -5,7 +5,7 @@ import (
 )
 
 /*
-For a couple of hours I used the 'original' dataset which proved too limiting.
+For a couple of hours at start of development I used the 'original' data struct which proved too limiting.
 But there was already too much data in the app, so this converter was necessary.
 */
 
