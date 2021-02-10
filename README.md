@@ -19,5 +19,5 @@ go build bb.go
 
 Then run "./bb mod" to initialise all the folders.
 
-You'll then have an up and running pubnix bulletin board. Just make sure all other users have access to the application.
+You'll then have an up and running pubnix bulletin board. Just make sure all other users have access to the application. Maybe place it in the binary folder.
 
