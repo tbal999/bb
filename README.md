@@ -1,4 +1,4 @@
-# bb
+# bb for LINUX
 a pubix bulletin board in go
 
 Built this over the last 10 days to serve as a 
