@@ -35,6 +35,14 @@ Usage of ./bb:
         Print all boards
         No args for interactive mode
         Only 1 arg at a time allowed
+	
+For administration/moderation:
+./bb mod args:
+
+        mod archive index -- archive a board at specific index.
+        (use standard -p arg to print board and select index)
+        mod p             -- print out list of archived boards
+
 ```
 
 Interactive Instructions:
