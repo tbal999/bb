@@ -39,7 +39,7 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	admin      = "username" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
@@ -442,6 +442,18 @@ func (s Snap) Exists(title, date string) bool {
 		}
 	}
 	return false
+}
+
+func (s Snap) Whatsnew() []string {
+	news := []string{}
+	for index := range s.Title {
+		for index2 := range bb.B {
+			if bb.B[index2].Title == s.Title[index] && bb.B[index2].Date == s.Date[index] && len(bb.B[index2].Contents) != s.Length[index] {
+				news = append(news, bb.B[index2].Title)
+			}
+		}
+	}
+	return news
 }
 
 ///BB & BB METHODS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -870,18 +882,23 @@ func (b Board) Save(filename string) {
 	tempboard.Title = Base.Title
 	tempboard.Owner = Base.Owner
 	tempboard.Date = Base.Date
-	for index := range Base.Contents { //This logic is a result of not best structured data. will be revised in future.
+	for index := range Base.Contents {
 		if len(Base.Contents[index]) == 3 {
 			if Base.Contents[index][2] == username {
 				tempboard.Contents = append(tempboard.Contents, Base.Contents[index])
 			}
-		} else {
-			t1 := strings.Split(Base.Contents[index][1], ">")[0]
-			checker := strings.Split(t1, "<")[1]
-			if checker == username {
-				tempboard.Contents = append(tempboard.Contents, Base.Contents[index])
-			}
 		}
+		//} else { LEGACY CODE CORRECTION SCRIPT CAN BE DELETED but keeping it here just in case...
+		//	if strings.Contains(Base.Contents[index][1], " | <") == false {
+		//		t1 := strings.Split(Base.Contents[index][1], ">")[0]
+		//		checker := strings.Split(t1, "<")[1]
+		//		if checker == username {
+		//			stage1 := strings.Split(Base.Contents[index][1], "<")
+		//			output := []string{Base.Contents[index][0], "    | <" + stage1[1], username}
+		//			tempboard.Contents = append(tempboard.Contents, output)
+		//		}
+		//	}
+		//}
 	}
 	output, err := json.MarshalIndent(&tempboard, "", "\t")
 	if err != nil {
@@ -952,7 +969,6 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
-	nothing - also refresh the index section
 	
 for CHAT section:
 	q - exits back to index section
@@ -1001,9 +1017,11 @@ PRESS ENTER TO CONTINUE...
 				goto Top
 			}
 		} else {
-			index, _ := strconv.Atoi(results)
-			back = 0
-			Viewboard(index)
+			if results != "" {
+				index, _ := strconv.Atoi(results)
+				back = 0
+				Viewboard(index)
+			}
 		}
 	}
 	aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
@@ -1116,7 +1134,7 @@ func main() { //Main entry function where flag vars are set up.d
 	}
 	bb.Load()
 	aa.Load()
-	allPtr := flag.Bool("p", false, "\nPrint all boards\nNo args for interactive mode\nOnly 1 arg at a time allowed")
+	allPtr := flag.Bool("p", false, "\nPrint all boards\nNo args for interactive mode\nOnly 1 arg at a time allowed\nu - get list of updated boards")
 	savePtr := flag.String("c", ``, "Title of new board you want to create (one word only)")
 	loadPtr := flag.Int("l", 99999, "Index of board you want to load")
 	addPtr := flag.String("a", ``, "Add input to board you were last accessing") //removed! (need to add 'date' string to last - can't be assed atm)
@@ -1125,6 +1143,8 @@ func main() { //Main entry function where flag vars are set up.d
 	switch switchboard {
 	case "ynnn":
 		bb.loadall(aa, "")
+		aa = bb.saveSnapshot()
+		aa.Save()
 	case "nynn":
 		newboard(*savePtr, bb)
 	case "nnyn":
@@ -1134,6 +1154,21 @@ func main() { //Main entry function where flag vars are set up.d
 		bb.addtoboard(*addPtr, ll.Title, ll.Date, false)
 	default:
 		if len(os.Args) == 2 {
+			if os.Args[1] == "u" {
+				newstuff := aa.Whatsnew()
+				if len(newstuff) == 0 {
+					fmt.Printf("No updates")
+				} else {
+					fmt.Printf("Board updates on: ")
+					for index := range newstuff {
+						fmt.Printf("%s", newstuff[index])
+						if index != len(newstuff)-1 {
+							fmt.Printf(", ")
+						}
+					}
+				}
+				fmt.Printf("\n")
+			}
 			if os.Args[1] == "mod" {
 				if username == admin {
 					fmt.Println("you are admin")
@@ -1197,7 +1232,4 @@ mod args:
 	if len(os.Args) == 1 {
 		ViewBB()
 	}
-	aa = bb.saveSnapshot()
-	aa.Save()
 }
-
