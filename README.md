@@ -59,7 +59,6 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
-	nothing - also refresh the index section
 	
 for CHAT section:
 	q - exits back to index section
