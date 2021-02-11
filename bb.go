@@ -39,7 +39,7 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "username" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
@@ -1134,7 +1134,8 @@ func main() { //Main entry function where flag vars are set up.d
 	}
 	bb.Load()
 	aa.Load()
-	allPtr := flag.Bool("p", false, "\nPrint all boards\nNo args for interactive mode\nOnly 1 arg at a time allowed\nu - get list of updated boards")
+	additionalargs := "u - get list of updated boards\nmod - access moderation mode"
+	allPtr := flag.Bool("p", false, "\nPrint all boards\nNo args for interactive mode\nAdditional args:\n"+additionalargs)
 	savePtr := flag.String("c", ``, "Title of new board you want to create (one word only)")
 	loadPtr := flag.Int("l", 99999, "Index of board you want to load")
 	addPtr := flag.String("a", ``, "Add input to board you were last accessing") //removed! (need to add 'date' string to last - can't be assed atm)
