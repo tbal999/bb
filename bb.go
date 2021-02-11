@@ -34,13 +34,13 @@ import (
 	"time"
 
 	"github.com/fatih/color" //to add colour to output
-	"mvdan.cc/xurls/v2" //to parse URLs
+	"mvdan.cc/xurls/v2"      //to parse URLs
 )
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== Heathens.club BB =="
+	admin      = "username" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== Local Pubnix BB =="
 
 	//Everything below does not need to be configured
 	multi        = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -60,9 +60,9 @@ var (
 	lastname     = "bbl4st.json"
 	anonname     = "bban0n.json"
 	pinname      = "bbp1n.json"
-	back         int                             //board scroll logic
-	maximum      int                             //board scroll logic
-	minimum      int                             //board scroll logic
+	back         int //board scroll logic
+	maximum      int //board scroll logic
+	minimum      int //board scroll logic
 )
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -592,8 +592,8 @@ func (b BB) loadall(s Snap, searchstring string) {
 		fmt.Println("there are no boards")
 	} else {
 		fmt.Println("")
-		fmt.Printf("BB Length: %d, visible rows: %d to %d", len(b.B), truemin, truemax)
-		fmt.Println("")
+		fmt.Printf("BB Length: %d, range: %d to %d", len(b.B), truemin, truemax)
+		fmt.Printf("\n\n")
 	}
 }
 
@@ -655,8 +655,8 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 		return false
 	} else {
 		fmt.Println("")
-		fmt.Printf("Length: %d, visible rows: %d to %d", len(b.B[ix].Contents), truemin, truemax)
-		fmt.Println("")
+		fmt.Printf("Board length: %d, range: %d to %d", len(b.B[ix].Contents), truemin, truemax)
+		fmt.Printf("\n\n")
 	}
 	return true
 }
@@ -1200,4 +1200,3 @@ mod args:
 	aa = bb.saveSnapshot()
 	aa.Save()
 }
-
