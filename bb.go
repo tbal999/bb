@@ -39,8 +39,8 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "username" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== Local Pubnix BB =="
+	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
 	multi        = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -1200,3 +1200,4 @@ mod args:
 	aa = bb.saveSnapshot()
 	aa.Save()
 }
+
