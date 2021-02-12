@@ -19,7 +19,7 @@ Then run "./bb mod" to initialise all the folders.
 
 You'll then have an up and running pubnix bulletin board. Just make sure all other users have access to the application. Maybe place it in the binary folder.
 
-You may need to edit the permissions in the admin .bbmod folder so that bban0n.json & bbp1n.json are both rw-rw-rw.
+You may need to edit the permissions in the admin .bbmod folder so that bban0n.json & bbp1n.json are both rw-rw-rw. bb should automatically do that but i've noticed it doesn't always work when started up (potential bug)
 
 ARGS instructions:
 
