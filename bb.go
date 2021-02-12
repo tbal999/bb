@@ -41,8 +41,8 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== Heathens.club BB =="
+	admin      = "yourname" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== BB =="
 
 	//Everything below does not need to be configured
 	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -713,9 +713,9 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 						continue
 					}
 					if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-						color.Cyan(b.B[index].Contents[index2][0] + b.B[index].Contents[index2][1])
+						color.Cyan(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 					} else {
-						fmt.Println(b.B[index].Contents[index2][0] + b.B[index].Contents[index2][1])
+						fmt.Println(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 					}
 				} else {
 					continue
@@ -848,11 +848,11 @@ func (b *BB) addtoboard(input, title, date string, anon bool) {
 		item := []string{}
 		item = append(item, timestamp())
 		if anon == true {
-			item = append(item, " | <???> "+addons.Parse(input))
+			item = append(item, addons.Parse(input))
 			item = append(item, "???")
 			an.Add(title, date, item)
 		} else {
-			item = append(item, " | <"+username+"> "+addons.Parse(input))
+			item = append(item, addons.Parse(input))
 			item = append(item, username)
 			b.B[botindex].Contents = append(b.B[botindex].Contents, item)
 		}
@@ -866,11 +866,11 @@ func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, ano
 	item := []string{}
 	item = append(item, timestamp())
 	if anon == true {
-		item = append(item, " | <???> "+addons.Parse(userinput)+" | Title: "+input)
+		item = append(item, addons.Parse(userinput)+" | Title: "+input)
 		item = append(item, "???")
 		an.Add(title, date, item)
 	} else {
-		item = append(item, " | <"+username+"> "+addons.Parse(userinput)+" | Title: "+input)
+		item = append(item, addons.Parse(userinput)+" | Title: "+input)
 		item = append(item, username)
 		B.B[botindex].Contents = append(B.B[botindex].Contents, item)
 	}
@@ -949,17 +949,6 @@ func (b Board) Save(filename string) {
 				tempboard.Contents = append(tempboard.Contents, Base.Contents[index])
 			}
 		}
-		//} else { LEGACY CODE CORRECTION SCRIPT CAN BE DELETED but keeping it here just in case...
-		//	if strings.Contains(Base.Contents[index][1], " | <") == false {
-		//		t1 := strings.Split(Base.Contents[index][1], ">")[0]
-		//		checker := strings.Split(t1, "<")[1]
-		//		if checker == username {
-		//			stage1 := strings.Split(Base.Contents[index][1], "<")
-		//			output := []string{Base.Contents[index][0], "    | <" + stage1[1], username}
-		//			tempboard.Contents = append(tempboard.Contents, output)
-		//		}
-		//	}
-		//}
 	}
 	output, err := json.MarshalIndent(&tempboard, "", "\t")
 	if err != nil {
