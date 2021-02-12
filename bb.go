@@ -16,6 +16,7 @@ package main
 */
 
 import (
+	"bb/addons"
 	"bb/bot"
 	"bb/converter"
 	"bufio"
@@ -847,11 +848,11 @@ func (b *BB) addtoboard(input, title, date string, anon bool) {
 		item := []string{}
 		item = append(item, timestamp())
 		if anon == true {
-			item = append(item, " | <???> "+input)
+			item = append(item, " | <???> "+addons.Parse(input))
 			item = append(item, "???")
 			an.Add(title, date, item)
 		} else {
-			item = append(item, " | <"+username+"> "+input)
+			item = append(item, " | <"+username+"> "+addons.Parse(input))
 			item = append(item, username)
 			b.B[botindex].Contents = append(b.B[botindex].Contents, item)
 		}
@@ -865,11 +866,11 @@ func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, ano
 	item := []string{}
 	item = append(item, timestamp())
 	if anon == true {
-		item = append(item, " | <???> "+userinput+" | Title: "+input)
+		item = append(item, " | <???> "+userinput+" | Title: "+addons.Parse(input))
 		item = append(item, "???")
 		an.Add(title, date, item)
 	} else {
-		item = append(item, " | <"+username+"> "+userinput+" | Title: "+input)
+		item = append(item, " | <"+username+"> "+userinput+" | Title: "+addons.Parse(input))
 		item = append(item, username)
 		B.B[botindex].Contents = append(B.B[botindex].Contents, item)
 	}
@@ -1243,8 +1244,10 @@ func main() { //Main entry function where flag vars are set up.d
 				if username == admin {
 					fmt.Println("###you are admin###")
 					fmt.Println("additional args:")
+					fmt.Println("init (initialise BB)")
 					fmt.Println("mod + (add user as mod)")
 					fmt.Println("mod - (remove user as mod)")
+					fmt.Println("")
 				}
 				if ismod == true {
 					fmt.Println("you are a bb moderator")
