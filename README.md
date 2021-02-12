@@ -80,3 +80,4 @@ FYI:
 		you'll see '^new' beside author name
 ```
 
+Then simply place the bb exec to your bin, and make the application accessible by all users. Ta-da, you have your own private bulletin board on your pubnix.
