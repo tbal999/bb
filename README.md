@@ -108,3 +108,31 @@ FYI:
 		you'll see '^new' beside author name
 ```
 
+If you are savvy with Go or just want to play around, you can add additional interpretive logic in the addons.go file.
+There's one toy example 'rev' where if you type 'rev' in front of your message, the message will be reversed.
+
+```
+package addons
+
+//You can add whatever you want here to interpret the input of the user. I've included an example
+
+//simple reverse a string function
+func reverse(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
+}
+
+func Parse(usertext string) (output string) {
+	output = usertext
+	if len(usertext) > 4 {
+		switch usertext[0:3] {
+		case "rev":
+			output = reverse(usertext[4:]) //if text starts with 'rev' then you reverse the rest of the string
+		}
+	}
+	return output
+}
+```
