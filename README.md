@@ -3,7 +3,7 @@ Built this over the last 10 days to serve as a
 bulletin board for pubnix: https://heathens.club/
 
 
-We wanted a custom board. So I built one. That's it! Might need to clean it up a bit as I built it in a kind of hurry, but it works as is so that's a start.
+We wanted a custom board. So I built one. That's it! Might need to clean it up a bit as I built it pretty fast, but it works as is so that's a start.
 
 Instructions:
 
