@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color" //to add colour to output
@@ -39,8 +40,8 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "USERNAME" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== PUBNIX BB =="
+	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
 	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -1228,22 +1229,22 @@ func main() { //Main entry function where flag vars are set up.d
 				}
 				fmt.Printf("\n")
 			}
+			if os.Args[1] == "init" && username == admin { //for ADMIN only - do this once at the start of BB
+				savedUmask := syscall.Umask(0)
+				os.Mkdir("/home/"+username+"/.bbmod", 0777)
+				mm.AddMod(username)
+				mm.IsMod()
+				mm.Save()
+				pin.Save()
+				an.Save()
+				_ = syscall.Umask(savedUmask) // Return the umask to the original
+			}
 			if os.Args[1] == "mod" {
 				if username == admin {
 					fmt.Println("###you are admin###")
 					fmt.Println("additional args:")
 					fmt.Println("mod + (add user as mod)")
 					fmt.Println("mod - (remove user as mod)")
-					os.Mkdir("/home/"+username+"/.bbmod", 0777)
-					cmd := exec.Command("cd /home/" + username + "/.bbmod")
-					cmd.Stdout = os.Stdout
-					cmd.Run()
-					cmd = exec.Command("umask 0000") //Linux masking needs to be removed here
-					cmd.Stdout = os.Stdout
-					cmd.Run()
-					mm.AddMod(username)
-					mm.IsMod()
-					mm.Save()
 				}
 				if ismod == true {
 					fmt.Println("you are a bb moderator")
