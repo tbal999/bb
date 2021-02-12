@@ -15,11 +15,11 @@ Instructions:
 Once you've done that, just build it & run it i.e
 go build bb.go
 
-Then run "./bb mod" to initialise all the folders.
+Then run "./bb init" once to initialise all the necessary folders.
 
-You'll then have an up and running pubnix bulletin board. Just make sure all other users have access to the application. Maybe place it in the binary folder.
+You'll then have an up and running pubnix bulletin board. 
 
-You may need to edit the permissions in the admin .bbmod folder so that bban0n.json & bbp1n.json are both rw-rw-rw. bb should automatically do that but i've noticed it doesn't always work when started up (potential bug)
+Then simply place the bb exec to your bin, and make the application accessible by all users. Ta-da, you have your own private bulletin board on your pubnix.
 
 ARGS instructions:
 
@@ -80,4 +80,3 @@ FYI:
 		you'll see '^new' beside author name
 ```
 
-Then simply place the bb exec to your bin, and make the application accessible by all users. Ta-da, you have your own private bulletin board on your pubnix.
