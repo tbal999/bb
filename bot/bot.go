@@ -11,13 +11,11 @@ import (
 )
 
 /*
-NOT REALLY A BOT - just where i place logic for 'interpretative' stuff
+NOT REALLY A BOT - just where i place logic for base 'interpretative' stuff
 CUrrently does:
 
 	- HTTP parsing
 	- Gemini parsing
-
-More to follow...
 */
 
 var url string
