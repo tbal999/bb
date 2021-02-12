@@ -39,8 +39,8 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== Heathens.club BB =="
+	admin      = "USERNAME" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== PUBNIX BB =="
 
 	//Everything below does not need to be configured
 	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -385,6 +385,16 @@ func (m *Mod) AddMod(user string) {
 		}
 	}
 	m.Name = append(m.Name, user)
+}
+
+//Lets you add a mod if you are admin
+func (m *Mod) RemoveMod(user string) {
+	for index := range m.Name {
+		if m.Name[index] == user {
+			m.Name = modremove(m.Name, index)
+			break
+		}
+	}
 }
 
 ///Anon & Anon METHODS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1220,7 +1230,10 @@ func main() { //Main entry function where flag vars are set up.d
 			}
 			if os.Args[1] == "mod" {
 				if username == admin {
-					fmt.Println("you are admin")
+					fmt.Println("###you are admin###")
+					fmt.Println("additional args:")
+					fmt.Println("mod + (add user as mod)")
+					fmt.Println("mod - (remove user as mod)")
 					os.Mkdir("/home/"+username+"/.bbmod", 0777)
 					cmd := exec.Command("cd /home/" + username + "/.bbmod")
 					cmd.Stdout = os.Stdout
@@ -1228,7 +1241,6 @@ func main() { //Main entry function where flag vars are set up.d
 					cmd = exec.Command("umask 0000") //Linux masking needs to be removed here
 					cmd.Stdout = os.Stdout
 					cmd.Run()
-					fmt.Scanln()
 					mm.AddMod(username)
 					mm.IsMod()
 					mm.Save()
@@ -1255,19 +1267,14 @@ mod args:
 				mm.Save()
 				mm.Load()
 			}
-			/*if os.Args[2] == "unarchive" && ismod == true { --unarchive causes... issues. So removed it for now.
-				ix, _ := strconv.Atoi(os.Args[3])
-				for index := range mm.Boardarchive {
-					if index == ix {
-						mm.Boardarchive = modremove(mm.Boardarchive, ix)
-						mm.Datearchive = modremove(mm.Datearchive, ix)
-						fmt.Println("unarchived")
-						break
-					}
-				}
+			if os.Args[2] == "+" && username == admin {
+				mm.AddMod(os.Args[3])
 				mm.Save()
-				mm.Load()
-			}*/
+			}
+			if os.Args[2] == "-" && username == admin {
+				mm.RemoveMod(os.Args[3])
+				mm.Save()
+			}
 		}
 	}
 	if len(os.Args) == 1 {
