@@ -1,6 +1,4 @@
 # bb for LINUX
-A pubnix bulletin board
-
 Built this over the last 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
 
