@@ -866,11 +866,11 @@ func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, ano
 	item := []string{}
 	item = append(item, timestamp())
 	if anon == true {
-		item = append(item, " | <???> "+userinput+" | Title: "+addons.Parse(input))
+		item = append(item, " | <???> "+addons.Parse(userinput)+" | Title: "+input)
 		item = append(item, "???")
 		an.Add(title, date, item)
 	} else {
-		item = append(item, " | <"+username+"> "+userinput+" | Title: "+addons.Parse(input))
+		item = append(item, " | <"+username+"> "+addons.Parse(userinput)+" | Title: "+input)
 		item = append(item, username)
 		B.B[botindex].Contents = append(B.B[botindex].Contents, item)
 	}
