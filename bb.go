@@ -18,7 +18,6 @@ package main
 import (
 	"bb/addons"
 	"bb/bot"
-	"bb/converter"
 	"bufio"
 	"encoding/json"
 	"flag"
@@ -41,8 +40,8 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "yourname" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
-	boardtitle = "== BB =="
+	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
 	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
@@ -631,7 +630,7 @@ func (b BB) loadall(s Snap, searchstring string) {
 		truemax = maximum - back
 	}
 	for index := range b.B {
-		if index >= truemin && index <= truemax && checkindexlist(indexlist, index) == false {
+		if index >= truemin && index <= truemax && checkindexlist(indexlist, index) == false && b.B[index].Date != "" {
 			strindex := strconv.Itoa(index)
 			repeat := false
 			searching := false
@@ -677,7 +676,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 	var truemin int
 	var truemax int
 	for index := range b.B {
-		if index == ix && b.B[index].Owner != "" {
+		if index == ix && b.B[index].Owner != "" && b.B[index].Date != "" {
 			aa.Switch(b.B[index].Title, b.B[index].Date)
 			sort.Slice(b.B[index].Contents, func(i, j int) bool { return b.B[index].Contents[i][0] < b.B[index].Contents[j][0] })
 			real = true
@@ -709,13 +708,15 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			}
 			for index2 := range b.B[index].Contents {
 				if index2 >= truemin && index2 <= truemax {
-					if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false && strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
-						continue
-					}
-					if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-						color.Cyan(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
-					} else {
-						fmt.Println(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+					if len(b.B[index].Contents[index2]) == 3 {
+						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false && strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
+							continue
+						}
+						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
+							color.Cyan(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+						} else {
+							fmt.Println(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+						}
 					}
 				} else {
 					continue
@@ -885,27 +886,11 @@ type Board struct {
 	Contents [][]string `json:Contents`
 }
 
-//Conversion of old data to new data via this method
 func (b *Board) Load(filename string) {
-	check := converter.ORIGINAL{}
+	item := *b
 	jsonFile, _ := ioutil.ReadFile(filename)
-	err := json.Unmarshal([]byte(jsonFile), &check)
-	if err != nil {
-		item := *b
-		jsonFile, _ = ioutil.ReadFile(filename)
-		_ = json.Unmarshal([]byte(jsonFile), &item)
-		*b = item
-	} else {
-		item := check.Convert()
-		jsonFile, _ = ioutil.ReadFile(filename)
-		_ = json.Unmarshal([]byte(jsonFile), &item)
-		*b = Board{
-			Date:     item.Date,
-			Owner:    item.Owner,
-			Title:    item.Title,
-			Contents: item.Contents,
-		}
-	}
+	_ = json.Unmarshal([]byte(jsonFile), &item)
+	*b = item
 }
 
 func (b Board) Delete(filename string) { //ONLY WORKS FOR ROOT AND SUDO USERS
