@@ -43,26 +43,27 @@ var (
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
-	multi        = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
-	ismod        bool
-	clear        map[string]func()               // create a map for storing clear funcs
-	username     string                          // store the username of the individual currently using BB
-	homefilepath string                          // the path for where the bb config files are
-	snapfilepath string                          // the path for where the bb snapshot file is
-	modfilepath  = "/home/" + admin + "/.bbmod/" // mods will be added to this file. Will also store the anonymous file.
-	aa           Snap                            // Snapshot object
-	bb           BB                              // BB object
-	mm           Mod                             // Moderator object
-	an           Anon                            // Anon object
-	ll           Last                            // Last board object
-	pin          Pin                             // Pin board object
-	snapname     = "bbsn4p.json"
-	lastname     = "bbl4st.json"
-	anonname     = "bban0n.json"
-	pinname      = "bbp1n.json"
-	back         int //board scroll logic
-	maximum      int //board scroll logic
-	minimum      int //board scroll logic
+	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
+	ismod          bool
+	clear          map[string]func()               // create a map for storing clear funcs
+	username       string                          // store the username of the individual currently using BB
+	homefilepath   string                          // the path for where the bb config files are
+	snapfilepath   string                          // the path for where the bb snapshot file is
+	masterfilepath = "/home/" + admin + "/.bbmod/" // mods will be added to this file. Will also store the anonymous file.
+	modfilepath    string
+	aa             Snap // Snapshot object
+	bb             BB   // BB object
+	mm             Mod  // Moderator object
+	an             Anon // Anon object
+	ll             Last // Last board object
+	pin            Pin  // Pin board object
+	snapname       = "bbsn4p.json"
+	lastname       = "bbl4st.json"
+	anonname       = "bban0n.json"
+	pinname        = "bbp1n.json"
+	back           int //board scroll logic
+	maximum        int //board scroll logic
+	minimum        int //board scroll logic
 )
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,16 +224,16 @@ func (p Pin) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(modfilepath+pinname, output, 0666)
+	err = ioutil.WriteFile(masterfilepath+pinname, output, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load mods
+//Load pins
 func (p *Pin) Load() {
 	item := *p
-	jsonFile, _ := ioutil.ReadFile(modfilepath + pinname)
+	jsonFile, _ := ioutil.ReadFile(masterfilepath + pinname)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	*p = item
 }
@@ -277,24 +278,62 @@ type Mod struct {
 
 //Save mod file
 func (m Mod) Save() {
-	Base := &m
-	output, err := json.MarshalIndent(Base, "", "\t")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	err = ioutil.WriteFile(modfilepath+"mod.json", output, 0644)
-	if err != nil {
-		fmt.Println(err)
+	if ismod == true {
+		Base := &m
+		output, err := json.MarshalIndent(Base, "", "\t")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = ioutil.WriteFile(modfilepath+"mod.json", output, 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
 //Load mods
 func (m *Mod) Load() {
 	item := *m
-	jsonFile, _ := ioutil.ReadFile(modfilepath + "mod.json") //no need to worry about error
-	_ = json.Unmarshal([]byte(jsonFile), &item)              //but leaving it empty in case one day... i need to worry
+	jsonFile, _ := ioutil.ReadFile(masterfilepath + "mod.json") //no need to worry about error
+	_ = json.Unmarshal([]byte(jsonFile), &item)                 //but leaving it empty in case one day... i need to worry
+	item.Collect()
 	*m = item
+}
+
+func (m *Mod) Collect() {
+	list := ufolderlist()
+	for index := range list {
+		m.collect(list[index])
+	}
+}
+
+func (m *Mod) collect(homeuser string) {
+	if m.IsUserMod(homeuser) {
+		modp := "/home/" + homeuser + "/.bbmod/"
+		learnfolder, err := ioutil.ReadDir(modp)
+		if err == nil {
+			for _, learnfile := range learnfolder {
+				if learnfile.Name() == "mod.json" {
+					mm := Mod{}
+					jsonFile, _ := ioutil.ReadFile(modp + "mod.json") //no need to worry about error
+					_ = json.Unmarshal([]byte(jsonFile), &mm)         //but leaving it empty in case one day... i need to worry
+					for index := range mm.Boardarchive {
+						exists := false
+						for index2 := range m.Boardarchive {
+							if m.Boardarchive[index2] == mm.Boardarchive[index] && m.Datearchive[index2] == mm.Datearchive[index] {
+								exists = true
+							}
+						}
+						if exists == false {
+							m.Boardarchive = append(m.Boardarchive, mm.Boardarchive[index])
+							m.Datearchive = append(m.Datearchive, mm.Datearchive[index])
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 //Check if a board is on the archive list - this is alternative to delete. If a board is on board archive it won't load
@@ -314,6 +353,16 @@ func (m Mod) IsMod() {
 			ismod = true
 		}
 	}
+}
+
+//Checks if current user is a mod
+func (m Mod) IsUserMod(uname string) bool {
+	for index := range m.Name {
+		if m.Name[index] == uname {
+			return true
+		}
+	}
+	return false
 }
 
 //Lets moderators archive a board by indoex
@@ -358,7 +407,7 @@ func (a Anon) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(modfilepath+anonname, output, 0666)
+	err = ioutil.WriteFile(masterfilepath+anonname, output, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -367,7 +416,7 @@ func (a Anon) Save() {
 //Load mods
 func (a *Anon) Load() {
 	item := *a
-	jsonFile, _ := ioutil.ReadFile(modfilepath + anonname)
+	jsonFile, _ := ioutil.ReadFile(masterfilepath + anonname)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	*a = item
 }
@@ -1122,15 +1171,14 @@ func main() { //Main entry function where flag vars are set up.d
 	mm.Load()
 	mm.IsMod()
 	if multi == true {
-		homefilepath = "/home/" + username + "/.bb" + admin + "/"
-		snapfilepath = "/home/" + username + "/.bbsn" + admin + "/"
-		os.Mkdir("/home/"+username+"/.bb"+admin, 0777)
-		os.Mkdir("/home/"+username+"/.bbsn"+admin, 0777)
+		//Ignore multi for now
 	} else {
 		homefilepath = "/home/" + username + "/.bb/"
 		snapfilepath = "/home/" + username + "/.bbsn/"
+		modfilepath = "/home/" + username + "/.bbmod/"
 		os.Mkdir("/home/"+username+"/.bb", 0777)
 		os.Mkdir("/home/"+username+"/.bbsn", 0777)
+		os.Mkdir("/home/"+username+"/.bbmod/", 0777)
 	}
 	bb.Load()
 	aa.Load()
@@ -1189,9 +1237,8 @@ func main() { //Main entry function where flag vars are set up.d
 					fmt.Println("you are a bb moderator")
 					fmt.Println(`
 mod args:
-	mod archive index -- archive a board at specific index.
+	mod del index -- delete/archive a board at specific index
 	(use standard -p arg to print board and select index)
-	mod p             -- print out list of archived boards
 	`)
 				} else {
 					fmt.Println("you are not a moderator")
@@ -1200,15 +1247,8 @@ mod args:
 				fmt.Println(mm.Name)
 			}
 		}
-		if len(os.Args) == 3 {
-			if os.Args[2] == "p" && ismod == true {
-				for index := range mm.Boardarchive {
-					fmt.Printf("%d) %s - %s\n", index, mm.Boardarchive[index], mm.Datearchive[index])
-				}
-			}
-		}
 		if len(os.Args) == 4 {
-			if os.Args[2] == "archive" && ismod == true {
+			if os.Args[2] == "del" && ismod == true {
 				bb.Load()
 				ix, _ := strconv.Atoi(os.Args[3])
 				mm.Archive(ix)
