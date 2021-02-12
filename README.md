@@ -2,6 +2,34 @@
 Built this over the last 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
 
+How BB looks:
+```
+== Pubnix BB ==
+0) pinned board! | author: tom | 2021-02-12 **PINNED**
+
+1) testboard 1 | author: tom | 2021-02-12
+2) testboard 2 | author: tom | 2021-02-12
+3) testboard 3 | author: tom | 2021-02-12
+
+BB Length: 4, range: 0 to 4
+
+--enter 'h' for help--
+Pick Index >> 
+```
+How a board looks:
+```
+testboard 1 | tom
+
+2021-02-12 14:32:05 | <tom> Hello this is some text
+2021-02-12 14:32:09 | <tom> here is some more
+2021-02-12 14:32:23 | <test> here is some more text from a test user!
+2021-02-12 14:32:33 | <test> isn't this special
+
+Board length: 4, range: 0 to 4
+
+Add >> 
+
+```
 
 We wanted a custom board. So I built one. That's it! Might need to clean it up a bit as I built it pretty fast, but it works as is so that's a start.
 
