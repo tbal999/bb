@@ -11,6 +11,7 @@ func reverse(s string) string {
 	return string(runes)
 }
 
+//Exported function - all user chat input is passed through this function. Feel free to edit.
 func Parse(usertext string) (output string) {
 	output = usertext
 	if len(usertext) > 4 {
