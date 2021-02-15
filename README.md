@@ -23,7 +23,6 @@ testboard 1 | tom
 2021-02-12 14:32:05 | <tom> Hello this is some text
 2021-02-12 14:32:09 | <tom> here is some more
 2021-02-12 14:32:23 | <test> here is some more text from a test user!
-2021-02-12 14:32:33 | <test> isn't this special
 
 Board length: 4, range: 0 to 4
 
