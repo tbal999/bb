@@ -107,7 +107,7 @@ FYI:
 		you'll see '^new' beside author name
 ```
 
-If you are savvy with Go or just want to play around, you can add additional interpretive logic in the addons.go file.
+You can add additional interpretive logic in the addons.go file.
 There's one toy example 'rev' where if you type 'rev' in front of your message, the message will be reversed.
 
 ```
