@@ -86,13 +86,15 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
-	
+	b - choose gemini client (default=NONE)
+
 for CHAT section:
 	q - exits back to index section
 	r - refresh the board you are on
 	fil - filter chat by specific string e.g YYYY-MM or substring
 	w - scroll up the board
 	d - scroll down the board
+	l - visit a gemini url via client
 	anon - make message anonymous
 	anything else - types text to board
 	nothing - also exits back to index section
