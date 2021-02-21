@@ -206,6 +206,9 @@ func (p *Personal) Load() {
 	item := *p
 	jsonFile, _ := ioutil.ReadFile(snapfilepath + pername)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
+	if item.Browser == "" {
+		item.Browser = "/home/palm93/bin/catfish"
+	}
 	*p = item
 }
 
@@ -1131,7 +1134,7 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
-	b - choose gemini client (default=NONE)
+	b - choose gemini client (default=catfish)
 	
 for CHAT section:
 	q - exits back to index section
@@ -1147,6 +1150,7 @@ for CHAT section:
 	ctrl-c to quit
 	
 FYI:
+	- For gemini client functionality you need to run bb inside tmux
 	- Boards glow cyan when new content is posted
 	- New boards glow green.
 	- You can comment other people via @ sign i.e @person
