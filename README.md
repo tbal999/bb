@@ -101,6 +101,7 @@ for CHAT section:
 	ctrl-c to quit
 	
 FYI:
+	- For gemini client functionality you need to run bb inside tmux
 	- Boards glow cyan when new content is posted
 	- New boards glow green.
 	- You can comment other people via @ sign i.e @person
