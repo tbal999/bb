@@ -207,7 +207,7 @@ func (p *Personal) Load() {
 	jsonFile, _ := ioutil.ReadFile(snapfilepath + pername)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	if item.Browser == "" {
-		item.Browser = "/home/palm93/bin/catfish"
+		item.Browser = "amfora"
 	}
 	*p = item
 }
@@ -1134,7 +1134,7 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
-	b - choose gemini client (default=catfish)
+	b - choose gemini client (default=amfora)
 	
 for CHAT section:
 	q - exits back to index section
