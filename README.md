@@ -1,5 +1,5 @@
 # bb for LINUX
-Built this over the last 10 days to serve as a 
+Built this initially over 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
 
 How BB looks:
