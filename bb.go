@@ -52,16 +52,18 @@ var (
 	snapfilepath   string                          // the path for where the bb snapshot file is
 	masterfilepath = "/home/" + admin + "/.bbmod/" // mods will be added to this file. Will also store the anonymous file.
 	modfilepath    string
-	aa             Snap // Snapshot object
-	bb             BB   // BB object
-	mm             Mod  // Moderator object
-	an             Anon // Anon object
-	ll             Last // Last board object
-	pin            Pin  // Pin board object
+	aa             Snap     // Snapshot object
+	bb             BB       // BB object
+	mm             Mod      // Moderator object
+	an             Anon     // Anon object
+	ll             Last     // Last board object
+	pin            Pin      // Pin board object
+	per            Personal //Personal variables object
 	snapname       = "bbsn4p.json"
 	lastname       = "bbl4st.json"
 	anonname       = "bban0n.json"
 	pinname        = "bbp1n.json"
+	pername        = "bbp3r.json"
 	back           int //board scroll logic
 	maximum        int //board scroll logic
 	minimum        int //board scroll logic
@@ -84,6 +86,11 @@ func callclear() {
 		value() //we execute it
 	}
 	//No need to panic.
+}
+
+func intmux(link, client string) {
+	muxcmd := exec.Command("tmux", "split", "-h", client, link) //Linux
+	muxcmd.Run()
 }
 
 //Grab a timestamp.
@@ -138,6 +145,17 @@ func alreadyhas(s [][]string, st string) bool {
 	return false
 }
 
+func grabgeminiurl(input string) string {
+	if strings.Contains(input, "gemini://") {
+		rxRelaxed := xurls.Relaxed()
+		astring := rxRelaxed.FindString(input)
+		if astring != "" { //--------------------------GEM grap input print out a fancy Title
+			return "gemi" + astring
+		}
+	}
+	return ""
+}
+
 //Add a slice to a 2d slice
 func add2slice(ax *[][]string, b []string) [][]string {
 	a := *ax
@@ -162,6 +180,33 @@ func rehash() {
 	an.Save()
 	bb = BB{} //Clear BB
 	bb.Load() //Reload BB
+}
+
+//Personal METHODS//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+type Personal struct {
+	Browser string
+}
+
+//Save file
+func (p Personal) Save() {
+	Base := &p
+	output, err := json.MarshalIndent(Base, "", "\t")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = ioutil.WriteFile(snapfilepath+pername, output, 0666)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+//Load file
+func (p *Personal) Load() {
+	item := *p
+	jsonFile, _ := ioutil.ReadFile(snapfilepath + pername)
+	_ = json.Unmarshal([]byte(jsonFile), &item)
+	*p = item
 }
 
 ///Pin board METHODS //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -669,6 +714,81 @@ func (b BB) loadall(s Snap, searchstring string) {
 	}
 }
 
+func (b BB) loadgem(ix, urlindex int) string {
+	var link string
+	for index := range b.B {
+		if index == ix {
+			for index2 := range b.B[index].Contents {
+				if index2 == urlindex {
+					if len(b.B[index].Contents[index2]) == 3 {
+						link = grabgeminiurl(b.B[index].Contents[index2][1])
+						break
+					}
+				}
+			}
+		}
+	}
+	return link
+}
+
+func (b BB) viewurl(ix int) bool {
+	change := bb.snapcheck(aa)
+	var real bool
+	var truemin int
+	var truemax int
+	for index := range b.B {
+		if index == ix && b.B[index].Owner != "" && b.B[index].Date != "" {
+			aa.Switch(b.B[index].Title, b.B[index].Date)
+			sort.Slice(b.B[index].Contents, func(i, j int) bool { return b.B[index].Contents[i][0] < b.B[index].Contents[j][0] })
+			real = true
+			ll.Title = b.B[index].Title
+			ll.Date = b.B[index].Date
+			ll.Save()
+			if change == true {
+				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
+			} else {
+				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
+			}
+			fmt.Println("")
+			if len(b.B[index].Contents) <= 30 {
+				minimum = 0
+				maximum = len(b.B[index].Contents)
+			} else {
+				minimum = len(b.B[index].Contents) - 30
+				maximum = len(b.B[index].Contents)
+			}
+			truemin = minimum - back
+			if truemin < 0 {
+				truemin = 0
+			}
+			truemax = maximum - back
+			for index2 := range b.B[index].Contents {
+				if index2 >= truemin && index2 <= truemax {
+					urlindex := strconv.Itoa(index2)
+					if len(b.B[index].Contents[index2]) == 3 && grabgeminiurl(b.B[index].Contents[index2][1]) != "" {
+						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
+							color.Cyan(urlindex + ") " + grabgeminiurl(b.B[index].Contents[index2][1]))
+						} else {
+							fmt.Println(urlindex + ") " + grabgeminiurl(b.B[index].Contents[index2][1]))
+						}
+					}
+				} else {
+					continue
+				}
+			}
+		}
+	}
+	if real == false {
+		fmt.Println("invalid index")
+		return false
+	} else {
+		fmt.Println("")
+		fmt.Printf("Board length: %d, range: %d to %d", len(b.B[ix].Contents), truemin, truemax)
+		fmt.Printf("\n\n")
+	}
+	return true
+}
+
 //Load specific board up.
 func (b *BB) loadboard(ix int, searchstring string) bool {
 	change := bb.snapcheck(aa)
@@ -713,9 +833,9 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-							color.Cyan(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							color.Cyan(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						} else {
-							fmt.Println(b.B[index].Contents[index2][0] + " | <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							fmt.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						}
 					}
 				} else {
@@ -960,6 +1080,13 @@ Top: //works for now! Might just need to place this all in another function.
 		Scanner := bufio.NewScanner(os.Stdin)
 		Scanner.Scan()
 		results := Scanner.Text()
+		if results == "b" || results == "B" {
+			fmt.Printf("Enter client name/path > ")
+			Scanner.Scan()
+			per.Browser = Scanner.Text()
+			per.Save()
+			goto Top
+		}
 		if results == "q" || results == "Q" {
 			end = false
 			break
@@ -1004,6 +1131,7 @@ for INDEX section:
 	r - refresh the index section
 	w - scroll up the index
 	d - scroll down the index
+	b - choose gemini client (default=NONE)
 	
 for CHAT section:
 	q - exits back to index section
@@ -1011,7 +1139,9 @@ for CHAT section:
 	fil - filter chat by specific string e.g YYYY-MM or substring
 	w - scroll up the board
 	d - scroll down the board
+	l - visit a gemini url via client
 	anon - make message anonymous
+	rev - reverses your text
 	anything else - types text to board
 	nothing - also exits back to index section
 	ctrl-c to quit
@@ -1105,6 +1235,18 @@ Top:
 					back = 0
 				}
 			}
+			if Scanner.Text() == "l" {
+				callclear()
+				bb.viewurl(index)
+				fmt.Printf("client + URL Index >> ")
+				Scanner.Scan()
+				urlindex, _ := strconv.Atoi(Scanner.Text())
+				url := bb.loadgem(index, urlindex)
+				intmux(url, per.Browser)
+				fmt.Println("Opening browser. Press anything to continue.")
+				fmt.Scanln()
+				goto Top
+			}
 			if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
 				//refresh for r or fil by itself
 			} else if Scanner.Text() == "q" {
@@ -1166,6 +1308,7 @@ func main() { //Main entry function where flag vars are set up.d
 		os.Mkdir("/home/"+username+"/.bbsn", 0777)
 		os.Mkdir("/home/"+username+"/.bbmod/", 0777)
 	}
+	per.Load()
 	bb.Load()
 	aa.Load()
 	additionalargs := "u - get list of updated boards\nmod - access moderation mode"
