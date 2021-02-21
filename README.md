@@ -1,6 +1,10 @@
 # bb for LINUX
-Built this initially over 10 days (latest update - 21/02/2021 - added gemini client link) to serve as a 
+Built this initially over 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
+
+Updates:
+
+- 21/02/2021 add a gemini client link
 
 How BB looks:
 ```
