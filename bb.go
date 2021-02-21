@@ -40,7 +40,7 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb mod" to ensure BB is set up correctly.
+	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
