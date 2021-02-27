@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io/ioutil" //deprecated will need to update this soon
 	"os"
 	"os/exec"
 	"os/user"
