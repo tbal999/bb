@@ -5,6 +5,7 @@ bulletin board for pubnix: https://heathens.club/
 Updates:
 
 - 21/02/2021 add a gemini client link
+- 06/03/2021 improved speed of viewbb / viewboard funcs
 
 How BB looks:
 ```
