@@ -1090,7 +1090,7 @@ func ViewBB(search string) {
 		}
 		if results == "q" || results == "Q" {
 			end = false
-			break
+			return
 		}
 		if results == "r" || results == "R" {
 			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
