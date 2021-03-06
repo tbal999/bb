@@ -1071,8 +1071,7 @@ func (b Board) Save(filename string) {
 
 //View the entire BB
 func ViewBB(search string) {
-	var end = true
-	for end == true {
+	for {
 		callclear()
 		bb.loadall(aa, search)
 		search = ""
@@ -1089,7 +1088,8 @@ func ViewBB(search string) {
 			ViewBB(search)
 		}
 		if results == "q" || results == "Q" {
-			end = false
+			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+			aa.Save()              //Save snapshot to file
 			return
 		}
 		if results == "r" || results == "R" {
@@ -1191,8 +1191,6 @@ PRESS ENTER TO CONTINUE...
 			}
 		}
 	}
-	aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-	aa.Save()              //Save snapshot to file
 }
 
 func Viewboard(index int, search string) {
