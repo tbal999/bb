@@ -1070,9 +1070,7 @@ func (b Board) Save(filename string) {
 }
 
 //View the entire BB
-func ViewBB() {
-	var search = ""
-Top: //works for now! Might just need to place this all in another function.
+func ViewBB(search string) {
 	var end = true
 	for end == true {
 		callclear()
@@ -1088,7 +1086,7 @@ Top: //works for now! Might just need to place this all in another function.
 			Scanner.Scan()
 			per.Browser = Scanner.Text()
 			per.Save()
-			goto Top
+			ViewBB(search)
 		}
 		if results == "q" || results == "Q" {
 			end = false
@@ -1098,7 +1096,7 @@ Top: //works for now! Might just need to place this all in another function.
 			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
 			aa.Save()              //Save snapshot to file
 			rehash()
-			goto Top
+			ViewBB(search)
 		}
 		if results == "w" {
 			back += 30
@@ -1109,14 +1107,14 @@ Top: //works for now! Might just need to place this all in another function.
 					back = len(bb.B) - 30
 				}
 			}
-			goto Top
+			ViewBB(search)
 		}
 		if results == "s" {
 			back -= 30
 			if back < 0 {
 				back = 0
 			}
-			goto Top
+			ViewBB(search)
 		}
 		if results == "h" || results == "H" {
 			callclear()
@@ -1161,7 +1159,7 @@ FYI:
 PRESS ENTER TO CONTINUE...
 					`)
 			fmt.Scanln()
-			goto Top
+			ViewBB(search)
 		}
 		if len(results) > 3 {
 			if results[0:3] == "new" && len(results) > 4 {
@@ -1173,23 +1171,23 @@ PRESS ENTER TO CONTINUE...
 			}
 			if results[0:3] == "fil" && len(results) > 4 {
 				search = string(results[4:])
-				goto Top
+				ViewBB(search)
 			}
 			if results[0:4] == "pin+" && len(results) > 5 {
 				index, _ := strconv.Atoi(string(results[5:]))
 				pin.Add(index)
-				goto Top
+				ViewBB(search)
 			}
 			if results[0:4] == "pin-" && len(results) > 5 {
 				index, _ := strconv.Atoi(string(results[5:]))
 				pin.Remove(index)
-				goto Top
+				ViewBB(search)
 			}
 		} else {
 			if results != "" {
 				index, _ := strconv.Atoi(results)
 				back = 0
-				Viewboard(index)
+				Viewboard(index, search)
 			}
 		}
 	}
@@ -1197,9 +1195,7 @@ PRESS ENTER TO CONTINUE...
 	aa.Save()              //Save snapshot to file
 }
 
-func Viewboard(index int) {
-	search := ""
-Top:
+func Viewboard(index int, search string) {
 	Scanner := bufio.NewScanner(os.Stdin)
 	end2 := true
 	for end2 == true {
@@ -1215,12 +1211,12 @@ Top:
 			if len(Scanner.Text()) > 3 {
 				if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
 					search = string(Scanner.Text()[4:])
-					goto Top
+					Viewboard(index, search)
 				}
 				if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
 					bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
 					rehash()
-					goto Top
+					Viewboard(index, search)
 				}
 			}
 			if Scanner.Text() == "w" {
@@ -1249,7 +1245,7 @@ Top:
 				intmux(url, per.Browser)
 				fmt.Println("Opening browser. Press anything to continue.")
 				fmt.Scanln()
-				goto Top
+				Viewboard(index, search)
 			}
 			if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
 				//refresh for r or fil by itself
@@ -1403,6 +1399,6 @@ mod args:
 		}
 	}
 	if len(os.Args) == 1 {
-		ViewBB()
+		ViewBB("")
 	}
 }
