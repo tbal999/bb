@@ -6,6 +6,7 @@ Updates:
 
 - 21/02/2021 add a gemini client link
 - 06/03/2021 improved speed of viewbb / viewboard funcs
+- 13/03/2021 replaced recursion with loop / continue to prevent possible memory issues
 
 How BB looks:
 ```
