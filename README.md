@@ -96,7 +96,7 @@ for INDEX section:
 for CHAT section:
 	q - exits back to index section
 	r - refresh the board you are on
-	fil - filter chat by specific string e.g YYYY-MM or substring
+	fil - filter chat by specific string e.g a message substring
 	w - scroll up the board
 	d - scroll down the board
 	l - visit a gemini url via client
