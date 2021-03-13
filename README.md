@@ -84,7 +84,7 @@ for INDEX section:
 	del - delete a board by index. 
 		If nobody else has accessed it - you can delete it. 
 	        Otherwise, you need superuser permission.
-	fil - filter index by search string e.g YYYY-MM or Title
+	fil - filter index by search string e.g Title
 	pin+ - pin a board by index
 	pin- - unpin a board by index
 	q - to quit, or use ctrl-c
