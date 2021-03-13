@@ -44,7 +44,6 @@ var (
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
-	multi          = false ////////////////////////// If, for some reason, you want multiple bb's on your pubnix (admins MUST be unique for each BB)
 	ismod          bool
 	clear          map[string]func()               // create a map for storing clear funcs
 	username       string                          // store the username of the individual currently using BB
@@ -1019,11 +1018,7 @@ func (b Board) Delete(filename string) { //ONLY WORKS FOR ROOT AND SUDO USERS
 	var afilepath string
 	list := ufolderlist()
 	for index := range list {
-		if multi == true {
-			afilepath = "/home/" + list[index] + "/.bb" + admin + "/"
-		} else {
-			afilepath = "/home/" + list[index] + "/.bb/"
-		}
+		afilepath = "/home/" + list[index] + "/.bb/"
 		bb.collect(list[index])
 		files, err := ioutil.ReadDir(afilepath)
 		if err != nil {
@@ -1295,16 +1290,12 @@ func main() { //Main entry function where flag vars are set up.d
 	username = strings.Split(u.HomeDir, "/")[2]
 	mm.Load()
 	mm.IsMod()
-	if multi == true {
-		//Ignore multi for now
-	} else {
-		homefilepath = "/home/" + username + "/.bb/"
-		snapfilepath = "/home/" + username + "/.bbsn/"
-		modfilepath = "/home/" + username + "/.bbmod/"
-		os.Mkdir("/home/"+username+"/.bb", 0777)
-		os.Mkdir("/home/"+username+"/.bbsn", 0777)
-		os.Mkdir("/home/"+username+"/.bbmod/", 0777)
-	}
+	homefilepath = "/home/" + username + "/.bb/"
+	snapfilepath = "/home/" + username + "/.bbsn/"
+	modfilepath = "/home/" + username + "/.bbmod/"
+	os.Mkdir("/home/"+username+"/.bb", 0777)
+	os.Mkdir("/home/"+username+"/.bbsn", 0777)
+	os.Mkdir("/home/"+username+"/.bbmod/", 0777)
 	per.Load()
 	bb.Load()
 	aa.Load()
