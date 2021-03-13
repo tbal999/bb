@@ -66,6 +66,46 @@ var (
 	back           int //board scroll logic
 	maximum        int //board scroll logic
 	minimum        int //board scroll logic
+	helpstring     = `
+===BB HELP===
+for INDEX section:
+	new - create a new board i.e 'new topictitle'
+	del - delete a board by index. 
+		If nobody else has accessed it - you can delete it. 
+	        Otherwise, you need superuser permission.
+	fil - filter index by search string e.g YYYY-MM or Title
+	pin+ - pin a board by index
+	pin- - unpin a board by index
+	q - to quit, or use ctrl-c
+	r - refresh the index section
+	w - scroll up the index
+	d - scroll down the index
+	b - choose gemini client (default=amfora)
+	
+for CHAT section:
+	q - exits back to index section
+	r - refresh the board you are on
+	fil - filter chat by specific string e.g YYYY-MM or substring
+	w - scroll up the board
+	d - scroll down the board
+	l - visit a gemini url via client
+	anon - make message anonymous
+	rev - reverses your text
+	anything else - types text to board
+	nothing - also exits back to index section
+	ctrl-c to quit
+	
+FYI:
+	- For gemini client functionality you need to run bb inside tmux
+	- Boards glow cyan when new content is posted
+	- New boards glow green.
+	- You can comment other people via @ sign i.e @person
+		they will see message highlighted
+	- If you are on a board and new content is posted on another board, 
+		you'll see '^new' beside author name
+	
+PRESS ENTER TO CONTINUE...
+					`
 )
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -683,7 +723,7 @@ func (b BB) loadall(s Snap, searchstring string) {
 			searching := false
 			for index2 := range s.Title {
 				if searchstring != "" {
-					if strings.Contains(b.B[index].Title, searchstring) == false || strings.Contains(b.B[index].Date, searchstring) == false {
+					if strings.Contains(b.B[index].Title, searchstring) == false && strings.Contains(b.B[index].Date, searchstring) == false {
 						searching = true
 						break
 					}
@@ -831,7 +871,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			for index2 := range b.B[index].Contents {
 				if index2 >= truemin && index2 <= truemax {
 					if len(b.B[index].Contents[index2]) == 3 {
-						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false || strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
+						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false && strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
@@ -1065,194 +1105,178 @@ func (b Board) Save(filename string) {
 
 //View the entire BB
 func ViewBB(search string) {
-	for {
-		callclear()
-		bb.loadall(aa, search)
-		search = ""
-		fmt.Printf("--enter 'h' for help--\n")
-		fmt.Printf("Pick Index >> ")
-		Scanner := bufio.NewScanner(os.Stdin)
+	callclear()
+	bb.loadall(aa, search)
+	search = ""
+	fmt.Printf("--enter 'h' for help--\n")
+	fmt.Printf("Pick Index >> ")
+	Scanner := bufio.NewScanner(os.Stdin)
+	Scanner.Scan()
+	results := Scanner.Text()
+	if results == "b" || results == "B" {
+		fmt.Printf("Enter client name/path > ")
 		Scanner.Scan()
-		results := Scanner.Text()
-		if results == "b" || results == "B" {
-			fmt.Printf("Enter client name/path > ")
-			Scanner.Scan()
-			per.Browser = Scanner.Text()
-			per.Save()
-			ViewBB(search)
+		per.Browser = Scanner.Text()
+		per.Save()
+		ViewBB(search)
+		return
+	}
+	if results == "q" || results == "Q" {
+		aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+		aa.Save()              //Save snapshot to file
+		return
+	}
+	if results == "r" || results == "R" {
+		aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+		aa.Save()              //Save snapshot to file
+		rehash()
+		ViewBB(search)
+		return
+	}
+	if results == "w" {
+		back += 30
+		if len(bb.B) <= 30 {
+			back = 0
+		} else {
+			if back > len(bb.B)-30 {
+				back = len(bb.B) - 30
+			}
 		}
-		if results == "q" || results == "Q" {
-			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-			aa.Save()              //Save snapshot to file
+		ViewBB(search)
+		return
+	}
+	if results == "s" {
+		back -= 30
+		if back < 0 {
+			back = 0
+		}
+		ViewBB(search)
+		return
+	}
+	if results == "h" || results == "H" {
+		callclear()
+		fmt.Println(helpstring)
+		fmt.Scanln()
+		ViewBB(search)
+		return
+	}
+	if len(results) > 3 {
+		if results[0:3] == "new" && len(results) > 4 {
+			newboard(results[4:], bb)
+			ViewBB(search)
 			return
 		}
-		if results == "r" || results == "R" {
-			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-			aa.Save()              //Save snapshot to file
-			rehash()
+		if results[0:3] == "del" && len(results) > 4 {
+			index, _ := strconv.Atoi(results[4:])
+			bb.delboard(index)
 			ViewBB(search)
+			return
 		}
-		if results == "w" {
-			back += 30
-			if len(bb.B) <= 30 {
-				back = 0
-			} else {
-				if back > len(bb.B)-30 {
-					back = len(bb.B) - 30
-				}
-			}
+		if results[0:3] == "fil" && len(results) > 4 {
+			search = string(results[4:])
 			ViewBB(search)
+			return
 		}
-		if results == "s" {
-			back -= 30
-			if back < 0 {
-				back = 0
-			}
+		if results[0:4] == "pin+" && len(results) > 5 {
+			index, _ := strconv.Atoi(string(results[5:]))
+			pin.Add(index)
 			ViewBB(search)
+			return
 		}
-		if results == "h" || results == "H" {
-			callclear()
-			fmt.Println(`
-===BB HELP===
-for INDEX section:
-	new - create a new board i.e 'new topictitle'
-	del - delete a board by index. 
-		If nobody else has accessed it - you can delete it. 
-	        Otherwise, you need superuser permission.
-	fil - filter index by search string e.g YYYY-MM or Title
-	pin+ - pin a board by index
-	pin- - unpin a board by index
-	q - to quit, or use ctrl-c
-	r - refresh the index section
-	w - scroll up the index
-	d - scroll down the index
-	b - choose gemini client (default=amfora)
-	
-for CHAT section:
-	q - exits back to index section
-	r - refresh the board you are on
-	fil - filter chat by specific string e.g YYYY-MM or substring
-	w - scroll up the board
-	d - scroll down the board
-	l - visit a gemini url via client
-	anon - make message anonymous
-	rev - reverses your text
-	anything else - types text to board
-	nothing - also exits back to index section
-	ctrl-c to quit
-	
-FYI:
-	- For gemini client functionality you need to run bb inside tmux
-	- Boards glow cyan when new content is posted
-	- New boards glow green.
-	- You can comment other people via @ sign i.e @person
-		they will see message highlighted
-	- If you are on a board and new content is posted on another board, 
-		you'll see '^new' beside author name
-	
-PRESS ENTER TO CONTINUE...
-					`)
-			fmt.Scanln()
+		if results[0:4] == "pin-" && len(results) > 5 {
+			index, _ := strconv.Atoi(string(results[5:]))
+			pin.Remove(index)
 			ViewBB(search)
+			return
 		}
-		if len(results) > 3 {
-			if results[0:3] == "new" && len(results) > 4 {
-				newboard(results[4:], bb)
-			}
-			if results[0:3] == "del" && len(results) > 4 {
-				index, _ := strconv.Atoi(results[4:])
-				bb.delboard(index)
-			}
-			if results[0:3] == "fil" && len(results) > 4 {
-				search = string(results[4:])
-				ViewBB(search)
-			}
-			if results[0:4] == "pin+" && len(results) > 5 {
-				index, _ := strconv.Atoi(string(results[5:]))
-				pin.Add(index)
-				ViewBB(search)
-			}
-			if results[0:4] == "pin-" && len(results) > 5 {
-				index, _ := strconv.Atoi(string(results[5:]))
-				pin.Remove(index)
-				ViewBB(search)
-			}
-		} else {
-			if results != "" {
-				index, _ := strconv.Atoi(results)
-				back = 0
-				Viewboard(index, search)
-			}
+	} else {
+		if results != "" {
+			index, _ := strconv.Atoi(results)
+			back = 0
+			Viewboard(index, search)
+			ViewBB(search)
+			return
 		}
 	}
+	ViewBB(search)
 }
 
 func Viewboard(index int, search string) {
 	Scanner := bufio.NewScanner(os.Stdin)
-	end2 := true
-	for end2 == true {
-		callclear()
-		real := bb.loadboard(index, search)
-		search = ""
-		if real == false {
+	callclear()
+	real := bb.loadboard(index, search)
+	if real == false {
+		return
+	}
+	search = ""
+	fmt.Printf("Add >> ")
+	Scanner.Scan()
+	if Scanner.Text() != "" {
+		if len(Scanner.Text()) > 3 {
+			if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
+				search = string(Scanner.Text()[4:])
+				Viewboard(index, search)
+				return
+			}
+			if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
+				bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
+				rehash()
+				Viewboard(index, search)
+				return
+			}
+		}
+		if Scanner.Text() == "w" {
+			back += 30
+			if len(bb.B[index].Contents) <= 30 {
+				back = 0
+			} else {
+				if back > len(bb.B[index].Contents)-30 {
+					back = len(bb.B[index].Contents) - 30
+				}
+			}
+		}
+		if Scanner.Text() == "h" || Scanner.Text() == "H" {
+			callclear()
+			fmt.Println(helpstring)
+			fmt.Scanln()
+			Viewboard(index, search)
 			return
 		}
-		fmt.Printf("Add >> ")
-		Scanner.Scan()
-		if Scanner.Text() != "" {
-			if len(Scanner.Text()) > 3 {
-				if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
-					search = string(Scanner.Text()[4:])
-					Viewboard(index, search)
-				}
-				if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
-					bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
-					rehash()
-					Viewboard(index, search)
-				}
-			}
-			if Scanner.Text() == "w" {
-				back += 30
-				if len(bb.B[index].Contents) <= 30 {
-					back = 0
-				} else {
-					if back > len(bb.B[index].Contents)-30 {
-						back = len(bb.B[index].Contents) - 30
-					}
-				}
-			}
-			if Scanner.Text() == "s" {
-				back -= 30
-				if back < 0 {
-					back = 0
-				}
-			}
-			if Scanner.Text() == "l" {
-				callclear()
-				bb.viewurl(index)
-				fmt.Printf("client + URL Index >> ")
-				Scanner.Scan()
-				urlindex, _ := strconv.Atoi(Scanner.Text())
-				url := bb.loadgem(index, urlindex)
-				intmux(url, per.Browser)
-				fmt.Println("Opening browser. Press anything to continue.")
-				fmt.Scanln()
-				Viewboard(index, search)
-			}
-			if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
-				//refresh for r or fil by itself
-			} else if Scanner.Text() == "q" {
+		if Scanner.Text() == "s" {
+			back -= 30
+			if back < 0 {
 				back = 0
-				break
-			} else {
-				bb.addtoboard(Scanner.Text(), ll.Title, ll.Date, false)
 			}
-		} else {
-			back = 0
-			break
 		}
-		rehash()
+		if Scanner.Text() == "l" {
+			callclear()
+			bb.viewurl(index)
+			fmt.Printf("client + URL Index >> ")
+			Scanner.Scan()
+			urlindex, _ := strconv.Atoi(Scanner.Text())
+			url := bb.loadgem(index, urlindex)
+			intmux(url, per.Browser)
+			fmt.Println("Opening browser. Press anything to continue.")
+			fmt.Scanln()
+			Viewboard(index, search)
+			return
+		}
+		if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
+			rehash()
+			Viewboard(index, search)
+			return
+		} else if Scanner.Text() == "q" {
+			back = 0
+			return
+		} else {
+			bb.addtoboard(Scanner.Text(), ll.Title, ll.Date, false)
+		}
+	} else {
+		back = 0
+		return
 	}
+	rehash()
+	Viewboard(index, search)
 }
 
 func switchstring(allPtr *bool, savePtr, addPtr *string, loadPtr *int) string {
