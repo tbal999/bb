@@ -684,7 +684,7 @@ func (b BB) loadall(s Snap, searchstring string) {
 			searching := false
 			for index2 := range s.Title {
 				if searchstring != "" {
-					if strings.Contains(b.B[index].Title, searchstring) == false && strings.Contains(b.B[index].Date, searchstring) == false {
+					if strings.Contains(b.B[index].Title, searchstring) == false || strings.Contains(b.B[index].Date, searchstring) == false {
 						searching = true
 						break
 					}
@@ -832,7 +832,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			for index2 := range b.B[index].Contents {
 				if index2 >= truemin && index2 <= truemax {
 					if len(b.B[index].Contents[index2]) == 3 {
-						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false && strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
+						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false || strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
@@ -953,7 +953,6 @@ func (b *BB) addtoboard(input, title, date string, anon bool) {
 			break
 		}
 	}
-	time.Sleep(50 * time.Millisecond)
 	if strings.Contains(input, "http://") || strings.Contains(input, "https://") {
 		rxRelaxed := xurls.Relaxed()
 		astring := rxRelaxed.FindString(input)
