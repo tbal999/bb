@@ -40,7 +40,7 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
+	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
@@ -1105,178 +1105,165 @@ func (b Board) Save(filename string) {
 
 //View the entire BB
 func ViewBB(search string) {
-	callclear()
-	bb.loadall(aa, search)
-	search = ""
-	fmt.Printf("--enter 'h' for help--\n")
-	fmt.Printf("Pick Index >> ")
-	Scanner := bufio.NewScanner(os.Stdin)
-	Scanner.Scan()
-	results := Scanner.Text()
-	if results == "b" || results == "B" {
-		fmt.Printf("Enter client name/path > ")
-		Scanner.Scan()
-		per.Browser = Scanner.Text()
-		per.Save()
-		ViewBB(search)
-		return
-	}
-	if results == "q" || results == "Q" {
-		aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-		aa.Save()              //Save snapshot to file
-		return
-	}
-	if results == "r" || results == "R" {
-		aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-		aa.Save()              //Save snapshot to file
-		rehash()
-		ViewBB(search)
-		return
-	}
-	if results == "w" {
-		back += 30
-		if len(bb.B) <= 30 {
-			back = 0
-		} else {
-			if back > len(bb.B)-30 {
-				back = len(bb.B) - 30
-			}
-		}
-		ViewBB(search)
-		return
-	}
-	if results == "s" {
-		back -= 30
-		if back < 0 {
-			back = 0
-		}
-		ViewBB(search)
-		return
-	}
-	if results == "h" || results == "H" {
+	for {
 		callclear()
-		fmt.Println(helpstring)
-		fmt.Scanln()
-		ViewBB(search)
-		return
-	}
-	if len(results) > 3 {
-		if results[0:3] == "new" && len(results) > 4 {
-			newboard(results[4:], bb)
-			ViewBB(search)
+		bb.loadall(aa, search)
+		search = ""
+		fmt.Printf("--enter 'h' for help--\n")
+		fmt.Printf("Pick Index >> ")
+		Scanner := bufio.NewScanner(os.Stdin)
+		Scanner.Scan()
+		results := Scanner.Text()
+		switch results {
+		case "b":
+			fmt.Printf("Enter client name/path > ")
+			Scanner.Scan()
+			per.Browser = Scanner.Text()
+			per.Save()
+			continue
+		case "q":
+			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+			aa.Save()              //Save snapshot to file
 			return
-		}
-		if results[0:3] == "del" && len(results) > 4 {
-			index, _ := strconv.Atoi(results[4:])
-			bb.delboard(index)
-			ViewBB(search)
-			return
-		}
-		if results[0:3] == "fil" && len(results) > 4 {
-			search = string(results[4:])
-			ViewBB(search)
-			return
-		}
-		if results[0:4] == "pin+" && len(results) > 5 {
-			index, _ := strconv.Atoi(string(results[5:]))
-			pin.Add(index)
-			ViewBB(search)
-			return
-		}
-		if results[0:4] == "pin-" && len(results) > 5 {
-			index, _ := strconv.Atoi(string(results[5:]))
-			pin.Remove(index)
-			ViewBB(search)
-			return
-		}
-	} else {
-		if results != "" {
-			index, _ := strconv.Atoi(results)
-			back = 0
-			Viewboard(index, search)
-			ViewBB(search)
-			return
-		}
-	}
-	ViewBB(search)
-}
-
-func Viewboard(index int, search string) {
-	Scanner := bufio.NewScanner(os.Stdin)
-	callclear()
-	real := bb.loadboard(index, search)
-	if real == false {
-		return
-	}
-	search = ""
-	fmt.Printf("Add >> ")
-	Scanner.Scan()
-	if Scanner.Text() != "" {
-		if len(Scanner.Text()) > 3 {
-			if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
-				search = string(Scanner.Text()[4:])
-				Viewboard(index, search)
-				return
-			}
-			if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
-				bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
-				rehash()
-				Viewboard(index, search)
-				return
-			}
-		}
-		if Scanner.Text() == "w" {
+		case "r":
+			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+			aa.Save()              //Save snapshot to file
+			rehash()
+			continue
+		case "w":
 			back += 30
-			if len(bb.B[index].Contents) <= 30 {
+			if len(bb.B) <= 30 {
 				back = 0
 			} else {
-				if back > len(bb.B[index].Contents)-30 {
-					back = len(bb.B[index].Contents) - 30
+				if back > len(bb.B)-30 {
+					back = len(bb.B) - 30
 				}
 			}
-		}
-		if Scanner.Text() == "h" || Scanner.Text() == "H" {
-			callclear()
-			fmt.Println(helpstring)
-			fmt.Scanln()
-			Viewboard(index, search)
-			return
-		}
-		if Scanner.Text() == "s" {
+			continue
+		case "s":
 			back -= 30
 			if back < 0 {
 				back = 0
 			}
-		}
-		if Scanner.Text() == "l" {
+			continue
+		case "h":
 			callclear()
-			bb.viewurl(index)
-			fmt.Printf("client + URL Index >> ")
-			Scanner.Scan()
-			urlindex, _ := strconv.Atoi(Scanner.Text())
-			url := bb.loadgem(index, urlindex)
-			intmux(url, per.Browser)
-			fmt.Println("Opening browser. Press anything to continue.")
+			fmt.Println(helpstring)
 			fmt.Scanln()
-			Viewboard(index, search)
-			return
+			continue
 		}
-		if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
-			rehash()
-			Viewboard(index, search)
-			return
-		} else if Scanner.Text() == "q" {
-			back = 0
-			return
+		if len(results) > 3 {
+			if len(results) > 4 {
+				if results[0:3] == "new" {
+					newboard(results[4:], bb)
+					continue
+				}
+				if results[0:3] == "del" {
+					index, _ := strconv.Atoi(results[4:])
+					bb.delboard(index)
+					continue
+				}
+				if results[0:3] == "fil" {
+					search = string(results[4:])
+					continue
+				}
+			}
+			if len(results) > 5 {
+				if results[0:4] == "pin+" {
+					index, _ := strconv.Atoi(string(results[5:]))
+					pin.Add(index)
+					continue
+				}
+				if results[0:4] == "pin-" {
+					index, _ := strconv.Atoi(string(results[5:]))
+					pin.Remove(index)
+					continue
+				}
+			}
 		} else {
-			bb.addtoboard(Scanner.Text(), ll.Title, ll.Date, false)
+			if results != "" {
+				index, _ := strconv.Atoi(results)
+				back = 0
+				Viewboard(index, search)
+				continue
+			}
 		}
-	} else {
-		back = 0
-		return
+	}
+}
+
+func Viewboard(index int, search string) {
+	Scanner := bufio.NewScanner(os.Stdin)
+	for {
+		callclear()
+		real := bb.loadboard(index, search)
+		if real == false {
+			return
+		}
+		search = ""
+		fmt.Printf("Add >> ")
+		Scanner.Scan()
+		if Scanner.Text() != "" {
+			if len(Scanner.Text()) > 3 {
+				if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
+					search = string(Scanner.Text()[4:])
+					continue
+				}
+				if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
+					bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
+					rehash()
+					continue
+				}
+			}
+			if Scanner.Text() == "w" {
+				back += 30
+				if len(bb.B[index].Contents) <= 30 {
+					back = 0
+				} else {
+					if back > len(bb.B[index].Contents)-30 {
+						back = len(bb.B[index].Contents) - 30
+					}
+				}
+			}
+			if Scanner.Text() == "h" || Scanner.Text() == "H" {
+				callclear()
+				fmt.Println(helpstring)
+				fmt.Scanln()
+				continue
+			}
+			if Scanner.Text() == "s" {
+				back -= 30
+				if back < 0 {
+					back = 0
+				}
+			}
+			if Scanner.Text() == "l" {
+				callclear()
+				bb.viewurl(index)
+				fmt.Printf("client + URL Index >> ")
+				Scanner.Scan()
+				urlindex, _ := strconv.Atoi(Scanner.Text())
+				url := bb.loadgem(index, urlindex)
+				intmux(url, per.Browser)
+				fmt.Println("Opening browser. Press anything to continue.")
+				fmt.Scanln()
+				continue
+			}
+			if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
+				rehash()
+				continue
+			} else if Scanner.Text() == "q" {
+				back = 0
+				break
+			} else {
+				bb.addtoboard(Scanner.Text(), ll.Title, ll.Date, false)
+			}
+		} else {
+			back = 0
+			break
+		}
+		rehash()
 	}
 	rehash()
-	Viewboard(index, search)
 }
 
 func switchstring(allPtr *bool, savePtr, addPtr *string, loadPtr *int) string {
