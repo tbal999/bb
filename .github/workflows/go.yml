@@ -1,22 +1,66 @@
-name: Go
+name: Generate plantuml files (.puml) & png diagram
+
+#TODO: create composite or docker action for puml job (row 27-39)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '*'
   pull_request:
-    branches: [ main ]
-
 jobs:
-
-  build:
+  puml:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.15
-        
-    - name: Run go example
-      uses: tbal999/goexample@1
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - name: Branch details
+        shell: bash
+        run: |
+             if [ -z "${GITHUB_HEAD_REF}" ]
+             then
+              echo NOT pull request, branch = $(echo ${GITHUB_REF#refs/heads/})
+              echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+             else
+              echo pull request, branch = $(echo ${GITHUB_HEAD_REF})
+              echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV
+             fi
+        id: extract_branch          
+      - name: Checkout branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          path: './mainrepo'
+          fetch-depth: 0
+      - name: checkout plantuml
+        uses: actions/checkout@v2
+        with: 
+          repository: bykof/go-plantuml
+          path: './plantuml'
+      - name: create puml file
+        run: |
+            cd ./plantuml
+            go mod tidy
+            go run . generate -d ../mainrepo -r
+            if [ -f "../mainrepo/graph.puml" ] ; then
+              rm "../mainrepo/graph.puml"
+            fi
+            if [ -f "../mainrepo/graph.png" ] ; then
+              rm "../mainrepo/graph.png"
+            fi
+            cp graph.puml ../mainrepo
+      - name: generate puml png diagram
+        uses: cloudbees/plantuml-github-action@master
+        with:
+            args: -v -tpng ./mainrepo/graph.puml
+      - name: pull & push
+        run: |
+            cd  ./mainrepo
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git pull
+            git add graph.png
+            git add graph.puml
+            git diff-index --quiet HEAD || git commit -m "generated puml & png image"
+            git push
