@@ -17,7 +17,7 @@ package main
 
 import (
 	"bb/addons"
-	"bb/bot"
+	bot "bb/urlparse"
 	"bufio"
 	"encoding/json"
 	"flag"
@@ -114,7 +114,10 @@ func init() { //runs at start pre-main to initialize some things.
 	clear["linux"] = func() {
 		cmd := exec.Command("clear") //Linux
 		cmd.Stdout = os.Stdout
-		cmd.Run()
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -129,7 +132,10 @@ func callclear() {
 
 func intmux(link, client string) {
 	muxcmd := exec.Command("tmux", "split", "-h", client, link) //Linux
-	muxcmd.Run()
+	err := muxcmd.Run()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 //Grab a timestamp.
@@ -274,7 +280,7 @@ func (P *Pin) Add(ix int) {
 			exists = true
 		}
 	}
-	if exists == false {
+	if !exists {
 		p.Title = append(p.Title, titletosave)
 		p.Date = append(p.Date, datetosave)
 	}
@@ -366,7 +372,7 @@ type Mod struct {
 
 //Save mod file
 func (m Mod) Save() {
-	if ismod == true {
+	if ismod {
 		Base := &m
 		output, err := json.MarshalIndent(Base, "", "\t")
 		if err != nil {
@@ -413,7 +419,7 @@ func (m *Mod) collect(homeuser string) {
 								exists = true
 							}
 						}
-						if exists == false {
+						if !exists {
 							m.Boardarchive = append(m.Boardarchive, mm.Boardarchive[index])
 							m.Datearchive = append(m.Datearchive, mm.Datearchive[index])
 						}
@@ -528,7 +534,7 @@ func (a *Anon) Add(title, date string, contents []string) {
 			a.Board[index].Contents = append(a.Board[index].Contents, contents)
 		}
 	}
-	if exists == false {
+	if !exists {
 		A.Title = append(A.Title, title)
 		A.Date = append(A.Date, date)
 		board := Anonboard{}
@@ -638,7 +644,7 @@ func (b BB) snapcheck(s Snap) bool {
 	for index := range b.B {
 		for index2 := range s.Title {
 			if b.B[index].Title == s.Title[index2] && b.B[index].Date == s.Date[index2] {
-				if len(b.B[index].Contents) != s.Length[index2] && s.Checked[index2] == false {
+				if len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
 					return true
 				}
 			}
@@ -656,18 +662,18 @@ func (b BB) loadpin(s Snap) []int {
 				strindex := strconv.Itoa(index)
 				repeat := false
 				for index2 := range s.Title {
-					if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && s.Checked[index2] == false {
+					if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
 						color.Cyan(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
 						repeat = true
 						break
 					}
-					if s.Exists(b.B[index].Title, b.B[index].Date) == false {
+					if !s.Exists(b.B[index].Title, b.B[index].Date) {
 						color.Green(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
 						repeat = true
 						break
 					}
 				}
-				if repeat == false {
+				if !repeat {
 					fmt.Println(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
 				}
 			} else {
@@ -693,7 +699,7 @@ func (b BB) loadall(s Snap, searchstring string) {
 	change := bb.snapcheck(aa)
 	var truemin int
 	var truemax int
-	if change == true {
+	if change {
 		fmt.Println(boardtitle + " ^new")
 	} else {
 		fmt.Println(boardtitle)
@@ -717,30 +723,30 @@ func (b BB) loadall(s Snap, searchstring string) {
 		truemax = maximum - back
 	}
 	for index := range b.B {
-		if index >= truemin && index <= truemax && checkindexlist(indexlist, index) == false && b.B[index].Date != "" {
+		if index >= truemin && index <= truemax && !checkindexlist(indexlist, index) && b.B[index].Date != "" {
 			strindex := strconv.Itoa(index)
 			repeat := false
 			searching := false
 			for index2 := range s.Title {
 				if searchstring != "" {
-					if strings.Contains(b.B[index].Title, searchstring) == false && strings.Contains(b.B[index].Date, searchstring) == false {
+					if !strings.Contains(b.B[index].Title, searchstring) && !strings.Contains(b.B[index].Date, searchstring) {
 						searching = true
 						break
 					}
 				}
-				if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && s.Checked[index2] == false {
+				if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
 					color.Cyan(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
 					repeat = true
 					break
 				}
-				if s.Exists(b.B[index].Title, b.B[index].Date) == false {
+				if !s.Exists(b.B[index].Title, b.B[index].Date) {
 					color.Green(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
 					repeat = true
 					break
 				}
 
 			}
-			if repeat == false && searching == false {
+			if !repeat && !searching {
 				fmt.Println(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
 			}
 		} else {
@@ -786,7 +792,7 @@ func (b BB) viewurl(ix int) bool {
 			ll.Title = b.B[index].Title
 			ll.Date = b.B[index].Date
 			ll.Save()
-			if change == true {
+			if !change {
 				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
 				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
@@ -820,7 +826,7 @@ func (b BB) viewurl(ix int) bool {
 			}
 		}
 	}
-	if real == false {
+	if !real {
 		fmt.Println("invalid index")
 		return false
 	} else {
@@ -845,7 +851,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			ll.Title = b.B[index].Title
 			ll.Date = b.B[index].Date
 			ll.Save()
-			if change == true {
+			if change {
 				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
 				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
@@ -871,7 +877,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			for index2 := range b.B[index].Contents {
 				if index2 >= truemin && index2 <= truemax {
 					if len(b.B[index].Contents[index2]) == 3 {
-						if searchstring != "" && (strings.Contains(b.B[index].Contents[index2][1], searchstring) == false && strings.Contains(b.B[index].Contents[index2][0], searchstring) == false) {
+						if searchstring != "" && !(strings.Contains(b.B[index].Contents[index2][1], searchstring)) && !(strings.Contains(b.B[index].Contents[index2][0], searchstring)) {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
@@ -886,7 +892,7 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			}
 		}
 	}
-	if real == false {
+	if !real {
 		fmt.Println("invalid index")
 		return false
 	} else {
@@ -907,7 +913,7 @@ func (b *BB) delboard(i int) {
 			b.B = remove(b.B, index)
 		}
 	}
-	if real == false {
+	if !real {
 		index := strconv.Itoa(i)
 		fmt.Println("If index " + index + " exists, you are not owner of topic. Ask a mod to archive if needed.")
 		fmt.Println("Press ENTER to continue.")
@@ -942,7 +948,7 @@ func (b *BB) collect(homeuser string) {
 				x := Board{}
 				x.Load(homepath + learnfile.Name())
 				archiveboard := mm.Check(x)
-				if archiveboard == true {
+				if archiveboard {
 					continue
 				}
 				chk := false
@@ -951,7 +957,7 @@ func (b *BB) collect(homeuser string) {
 						ownercount[x.Title] = append(ownercount[x.Title], x.Owner)
 						chk = true
 						for index2 := range x.Contents {
-							if alreadyhas(B.B[index].Contents, x.Contents[index2][1]) == false {
+							if !alreadyhas(B.B[index].Contents, x.Contents[index2][1]) {
 								B.B[index].Contents = add2slice(&B.B[index].Contents, x.Contents[index2])
 							}
 						}
@@ -971,7 +977,7 @@ func (b *BB) collect(homeuser string) {
 						fmt.Scanln()
 					}
 				}
-				if chk == false {
+				if !chk {
 					B.B = append(B.B, x)
 				}
 			}
@@ -1009,7 +1015,7 @@ func (b *BB) addtoboard(input, title, date string, anon bool) {
 	} else {
 		item := []string{}
 		item = append(item, timestamp())
-		if anon == true {
+		if anon {
 			item = append(item, addons.Parse(input))
 			item = append(item, "???")
 			an.Add(title, date, item)
@@ -1027,7 +1033,7 @@ func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, ano
 	B := *b
 	item := []string{}
 	item = append(item, timestamp())
-	if anon == true {
+	if anon {
 		item = append(item, addons.Parse(userinput)+" | Title: "+input)
 		item = append(item, "???")
 		an.Add(title, date, item)
@@ -1041,10 +1047,10 @@ func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, ano
 
 //Board is the struct that holds all data about a specific board
 type Board struct {
-	Date     string     `json:Date`
-	Owner    string     `json:Owner`
-	Title    string     `json:Title`
-	Contents [][]string `json:Contents`
+	Date     string
+	Owner    string
+	Title    string
+	Contents [][]string
 }
 
 func (b *Board) Load(filename string) {
@@ -1196,7 +1202,7 @@ func Viewboard(index int, search string) {
 	for {
 		callclear()
 		real := bb.loadboard(index, search)
-		if real == false {
+		if !real {
 			return
 		}
 		search = ""
@@ -1268,7 +1274,7 @@ func Viewboard(index int, search string) {
 
 func switchstring(allPtr *bool, savePtr, addPtr *string, loadPtr *int) string {
 	var out string
-	if allPtr != nil && *allPtr == true { //ynnn
+	if allPtr != nil && *allPtr { //ynnn
 		out += "y"
 	} else {
 		out += "n"
@@ -1304,9 +1310,18 @@ func main() { //Main entry function where flag vars are set up.d
 	homefilepath = "/home/" + username + "/.bb/"
 	snapfilepath = "/home/" + username + "/.bbsn/"
 	modfilepath = "/home/" + username + "/.bbmod/"
-	os.Mkdir("/home/"+username+"/.bb", 0777)
-	os.Mkdir("/home/"+username+"/.bbsn", 0777)
-	os.Mkdir("/home/"+username+"/.bbmod/", 0777)
+	err = os.Mkdir("/home/"+username+"/.bb", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = os.Mkdir("/home/"+username+"/.bbsn", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
 	per.Load()
 	bb.Load()
 	aa.Load()
@@ -1348,7 +1363,10 @@ func main() { //Main entry function where flag vars are set up.d
 			}
 			if os.Args[1] == "init" && username == admin { //for ADMIN only - do this once at the start of BB
 				savedUmask := syscall.Umask(0)
-				os.Mkdir("/home/"+username+"/.bbmod", 0777)
+				err := os.Mkdir("/home/"+username+"/.bbmod", 0777)
+				if err != nil {
+					fmt.Println(err)
+				}
 				mm.AddMod(username)
 				mm.IsMod()
 				mm.Save()
@@ -1365,7 +1383,7 @@ func main() { //Main entry function where flag vars are set up.d
 					fmt.Println("mod - (remove user as mod)")
 					fmt.Println("")
 				}
-				if ismod == true {
+				if ismod {
 					fmt.Println("you are a bb moderator")
 					fmt.Println(`
 mod args:
@@ -1380,7 +1398,7 @@ mod args:
 			}
 		}
 		if len(os.Args) == 4 {
-			if os.Args[2] == "del" && ismod == true {
+			if os.Args[2] == "del" && ismod {
 				bb.Load()
 				ix, _ := strconv.Atoi(os.Args[3])
 				mm.Archive(ix)
