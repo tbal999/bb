@@ -2,6 +2,10 @@
 Built this initially over 10 days to serve as a 
 bulletin board for pubnix: https://heathens.club/
 
+This is 'decentralized' and works like most tildespace tools/apps/programs. 
+Each user will have their data stored within their home folder, and bb
+will iterate through all users to collate the messages for each board.
+
 Updates:
 
 - 21/02/2021 add a gemini client link
