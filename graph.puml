@@ -1,9 +1,48 @@
 @startuml
 package ...main{
+class Pin {
++Title: []string
++Date: []string
++*Add(ix int): 
++*Remove(ix int): 
++Save(): 
++*Load(): 
+}
+}
+package ...main{
+class Last {
++Title: string
++Date: string
++Save(): 
++*Load(): 
+}
+}
+package ...main{
+class Board {
++Date: string
++Owner: string
++Title: string
++Contents: [][]string
++*Load(filename string): 
++Delete(filename string): 
++Save(filename string): 
+}
+}
+package ...main{
 class Personal {
 +Browser: string
 +Save(): 
 +*Load(): 
+}
+}
+package ...main{
+class Anon {
++Title: []string
++Date: []string
++Board: []Anonboard
++Save(): 
++*Load(): 
++*Add(title string, contents []string): 
 }
 }
 package ...main{
@@ -18,6 +57,12 @@ class Snap {
 +*Switch(title string): 
 +Exists(title string): bool
 +Whatsnew(): []string
+}
+}
+package ...main{
+class Anonboard {
++Contents: [][]string
+
 }
 }
 package ...main{
@@ -36,51 +81,6 @@ class BB {
 +*collect(homeuser string): 
 +*addtoboard(input string, anon bool): 
 +*addURLtitle(botindex int, input string, anon bool): 
-}
-}
-package ...main{
-class Board {
-+Date: string
-+Owner: string
-+Title: string
-+Contents: [][]string
-+*Load(filename string): 
-+Delete(filename string): 
-+Save(filename string): 
-}
-}
-package ...main{
-class Last {
-+Title: string
-+Date: string
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
-class Anon {
-+Title: []string
-+Date: []string
-+Board: []Anonboard
-+Save(): 
-+*Load(): 
-+*Add(title string, contents []string): 
-}
-}
-package ...main{
-class Anonboard {
-+Contents: [][]string
-
-}
-}
-package ...main{
-class Pin {
-+Title: []string
-+Date: []string
-+*Add(ix int): 
-+*Remove(ix int): 
-+Save(): 
-+*Load(): 
 }
 }
 package ...main{
