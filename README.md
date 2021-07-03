@@ -6,6 +6,9 @@ This is decentralized and works like most tildespace tools/apps/programs.
 Each user will have their data stored within their home folder, and bb
 will iterate through all users to collate the messages for each board.
 
+Your data will be read only for everybody else, so everybody can read eachother's data 
+and enable the board to work!
+
 Updates:
 
 - 21/02/2021 add a gemini client link
