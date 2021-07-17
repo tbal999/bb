@@ -36,11 +36,13 @@ import (
 
 	"github.com/fatih/color" //to add colour to output
 	"mvdan.cc/xurls/v2"      //to parse URLs
+
+	"github.com/pterm/pterm" //to make terminal pretty
 )
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
+	admin      = "tox" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
 	boardtitle = "== Heathens.club BB =="
 
 	//Everything below does not need to be configured
@@ -66,6 +68,7 @@ var (
 	back           int //board scroll logic
 	maximum        int //board scroll logic
 	minimum        int //board scroll logic
+	length         = 20
 	helpstring     = `
 ===BB HELP===
 for INDEX section:
@@ -79,7 +82,7 @@ for INDEX section:
 	q - to quit, or use ctrl-c
 	r - refresh the index section
 	w - scroll up the index
-	d - scroll down the index
+	s - scroll down the index
 	b - choose gemini client (default=amfora)
 	
 for CHAT section:
@@ -87,7 +90,7 @@ for CHAT section:
 	r - refresh the board you are on
 	fil - filter chat by specific string e.g YYYY-MM or substring
 	w - scroll up the board
-	d - scroll down the board
+	s - scroll down the board
 	l - visit a gemini url via client
 	anon - make message anonymous
 	rev - reverses your text
@@ -110,6 +113,7 @@ PRESS ENTER TO CONTINUE...
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 func init() { //runs at start pre-main to initialize some things.
+	pterm.EnableOutput()
 	clear = make(map[string]func()) //Initialize it
 	clear["linux"] = func() {
 		cmd := exec.Command("clear") //Linux
@@ -696,20 +700,21 @@ func checkindexlist(list []int, index int) bool {
 
 //Load all contents of BB to the screen.
 func (b BB) loadall(s Snap, searchstring string) {
+	header := pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgBlue))
 	change := bb.snapcheck(aa)
 	var truemin int
 	var truemax int
 	if change {
-		fmt.Println(boardtitle + " ^new")
+		pterm.Println(header.Sprint("-- heathens.club bulletin board -- [NEW]"))
 	} else {
-		fmt.Println(boardtitle)
+		pterm.Println(header.Sprint("-- heathens.club bulletin board --"))
 	}
 	indexlist := b.loadpin(s)
-	if len(b.B) <= 30 {
+	if len(b.B) <= length {
 		minimum = 0
 		maximum = len(b.B)
 	} else {
-		minimum = len(b.B) - 30
+		minimum = len(b.B) - length
 		maximum = len(b.B)
 	}
 	if searchstring != "" {
@@ -793,16 +798,16 @@ func (b BB) viewurl(ix int) bool {
 			ll.Date = b.B[index].Date
 			ll.Save()
 			if !change {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
 			}
 			fmt.Println("")
-			if len(b.B[index].Contents) <= 30 {
+			if len(b.B[index].Contents) <= length {
 				minimum = 0
 				maximum = len(b.B[index].Contents)
 			} else {
-				minimum = len(b.B[index].Contents) - 30
+				minimum = len(b.B[index].Contents) - length
 				maximum = len(b.B[index].Contents)
 			}
 			truemin = minimum - back
@@ -839,6 +844,8 @@ func (b BB) viewurl(ix int) bool {
 
 //Load specific board up.
 func (b *BB) loadboard(ix int, searchstring string) bool {
+	btp := &pterm.BasicTextPrinter{}
+	bgp := btp.WithStyle(&pterm.ThemeDefault.SuccessMessageStyle)
 	change := bb.snapcheck(aa)
 	var real bool
 	var truemin int
@@ -852,16 +859,16 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			ll.Date = b.B[index].Date
 			ll.Save()
 			if change {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
 			}
 			fmt.Println("")
-			if len(b.B[index].Contents) <= 30 {
+			if len(b.B[index].Contents) <= length {
 				minimum = 0
 				maximum = len(b.B[index].Contents)
 			} else {
-				minimum = len(b.B[index].Contents) - 30
+				minimum = len(b.B[index].Contents) - length
 				maximum = len(b.B[index].Contents)
 			}
 			if searchstring != "" {
@@ -881,9 +888,9 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-							color.Cyan(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							bgp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						} else {
-							fmt.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							btp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						}
 					}
 				} else {
@@ -1137,17 +1144,17 @@ func ViewBB(search string) {
 			rehash()
 			continue
 		case "w":
-			back += 30
-			if len(bb.B) <= 30 {
+			back += length
+			if len(bb.B) <= length {
 				back = 0
 			} else {
-				if back > len(bb.B)-30 {
-					back = len(bb.B) - 30
+				if back > len(bb.B)-length {
+					back = len(bb.B) - length
 				}
 			}
 			continue
 		case "s":
-			back -= 30
+			back -= length
 			if back < 0 {
 				back = 0
 			}
@@ -1221,12 +1228,12 @@ func Viewboard(index int, search string) {
 				}
 			}
 			if Scanner.Text() == "w" {
-				back += 30
-				if len(bb.B[index].Contents) <= 30 {
+				back += length
+				if len(bb.B[index].Contents) <= length {
 					back = 0
 				} else {
-					if back > len(bb.B[index].Contents)-30 {
-						back = len(bb.B[index].Contents) - 30
+					if back > len(bb.B[index].Contents)-length {
+						back = len(bb.B[index].Contents) - length
 					}
 				}
 			}
@@ -1237,7 +1244,7 @@ func Viewboard(index int, search string) {
 				continue
 			}
 			if Scanner.Text() == "s" {
-				back -= 30
+				back -= length
 				if back < 0 {
 					back = 0
 				}
