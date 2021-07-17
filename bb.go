@@ -36,6 +36,8 @@ import (
 
 	"github.com/fatih/color" //to add colour to output
 	"mvdan.cc/xurls/v2"      //to parse URLs
+
+	"github.com/pterm/pterm" //to make terminal pretty
 )
 
 var (
@@ -110,6 +112,7 @@ PRESS ENTER TO CONTINUE...
 
 //GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 func init() { //runs at start pre-main to initialize some things.
+	pterm.EnableOutput()
 	clear = make(map[string]func()) //Initialize it
 	clear["linux"] = func() {
 		cmd := exec.Command("clear") //Linux
@@ -696,13 +699,14 @@ func checkindexlist(list []int, index int) bool {
 
 //Load all contents of BB to the screen.
 func (b BB) loadall(s Snap, searchstring string) {
+	header := pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgBlue))
 	change := bb.snapcheck(aa)
 	var truemin int
 	var truemax int
 	if change {
-		fmt.Println(boardtitle + " ^new")
+		pterm.Println(header.Sprint("-- heathens.club bulletin board -- [NEW]"))
 	} else {
-		fmt.Println(boardtitle)
+		pterm.Println(header.Sprint("-- heathens.club bulletin board --"))
 	}
 	indexlist := b.loadpin(s)
 	if len(b.B) <= 30 {
@@ -793,9 +797,9 @@ func (b BB) viewurl(ix int) bool {
 			ll.Date = b.B[index].Date
 			ll.Save()
 			if !change {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
 			}
 			fmt.Println("")
 			if len(b.B[index].Contents) <= 30 {
@@ -852,9 +856,9 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 			ll.Date = b.B[index].Date
 			ll.Save()
 			if change {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
 			} else {
-				fmt.Println(b.B[index].Title + " | " + b.B[index].Owner)
+				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
 			}
 			fmt.Println("")
 			if len(b.B[index].Contents) <= 30 {
