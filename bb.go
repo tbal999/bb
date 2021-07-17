@@ -843,6 +843,8 @@ func (b BB) viewurl(ix int) bool {
 
 //Load specific board up.
 func (b *BB) loadboard(ix int, searchstring string) bool {
+	btp := &pterm.BasicTextPrinter{}
+	bgp := btp.WithStyle(&pterm.ThemeDefault.SuccessMessageStyle)
 	change := bb.snapcheck(aa)
 	var real bool
 	var truemin int
@@ -885,9 +887,9 @@ func (b *BB) loadboard(ix int, searchstring string) bool {
 							continue
 						}
 						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-							color.Cyan(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							bgp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						} else {
-							fmt.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
+							btp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
 						}
 					}
 				} else {
