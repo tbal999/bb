@@ -1,9 +1,48 @@
 @startuml
 package ...main{
+<<<<<<< HEAD
 class Personal {
 +Browser: string
+=======
+class Snap {
++Owner: []string
++Title: []string
++Date: []string
++Length: []int
++Checked: []bool
 +Save(): 
 +*Load(): 
++*Switch(title string): 
++Exists(title string): bool
++Whatsnew(): []string
+}
+}
+package ...main{
+class Anon {
++Title: []string
++Date: []string
++Board: []Anonboard
++Save(): 
++*Load(): 
++*Add(title string, contents []string): 
+}
+}
+package ...main{
+class Mod {
++Name: []string
++Boardarchive: []string
++Datearchive: []string
+>>>>>>> 0535c6981b56f6b9a15af069cfb59e8b071675cc
++Save(): 
++*Load(): 
++*Collect(): 
++*collect(homeuser string): 
++Check(b Board): bool
++IsMod(): 
++IsUserMod(uname string): bool
++*Archive(item int): 
++*AddMod(user string): 
++*RemoveMod(user string): 
 }
 }
 package ...main{
@@ -26,6 +65,7 @@ class BB {
 }
 package ...main{
 class Pin {
+<<<<<<< HEAD
 +Title: []string
 +Date: []string
 +*Add(ix int): 
@@ -37,18 +77,18 @@ class Pin {
 package ...main{
 class Snap {
 +Owner: []string
+=======
+>>>>>>> 0535c6981b56f6b9a15af069cfb59e8b071675cc
 +Title: []string
 +Date: []string
-+Length: []int
-+Checked: []bool
++*Add(ix int): 
++*Remove(ix int): 
 +Save(): 
 +*Load(): 
-+*Switch(title string): 
-+Exists(title string): bool
-+Whatsnew(): []string
 }
 }
 package ...main{
+<<<<<<< HEAD
 class Mod {
 +Name: []string
 +Boardarchive: []string
@@ -73,6 +113,11 @@ class Anon {
 +Save(): 
 +*Load(): 
 +*Add(title string, contents []string): 
+=======
+class Anonboard {
++Contents: [][]string
+
+>>>>>>> 0535c6981b56f6b9a15af069cfb59e8b071675cc
 }
 }
 package ...main{
@@ -95,9 +140,17 @@ class Last {
 }
 }
 package ...main{
+<<<<<<< HEAD
 class Anonboard {
 +Contents: [][]string
 
+=======
+class Last {
++Title: string
++Date: string
++Save(): 
++*Load(): 
+>>>>>>> 0535c6981b56f6b9a15af069cfb59e8b071675cc
 }
 }
 
