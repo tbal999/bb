@@ -1,12 +1,26 @@
 @startuml
 package ...main{
-class Pin {
+class Snap {
++Owner: []string
 +Title: []string
 +Date: []string
-+*Add(ix int): 
-+*Remove(ix int): 
++Length: []int
++Checked: []bool
 +Save(): 
 +*Load(): 
++*Switch(title string): 
++Exists(title string): bool
++Whatsnew(): []string
+}
+}
+package ...main{
+class Anon {
++Title: []string
++Date: []string
++Board: []Anonboard
++Save(): 
++*Load(): 
++*Add(title string, contents []string): 
 }
 }
 package ...main{
@@ -27,27 +41,37 @@ class Mod {
 }
 }
 package ...main{
-class Anon {
-+Title: []string
-+Date: []string
-+Board: []Anonboard
-+Save(): 
+class BB {
++B: []Board
+-saveSnapshot(): Snap
 +*Load(): 
-+*Add(title string, contents []string): 
+-snapcheck(s Snap): bool
+-loadpin(s Snap): []int
+-loadall(s Snap, searchstring string): 
+-loadgem(ix int): string
+-viewurl(ix int): bool
++*loadboard(ix int, searchstring string): bool
++*delboard(i int): 
++*anoncollect(): 
++*collect(homeuser string): 
++*addtoboard(input string, anon bool): 
++*addURLtitle(botindex int, input string, anon bool): 
 }
 }
 package ...main{
-class Snap {
-+Owner: []string
+class Pin {
 +Title: []string
 +Date: []string
-+Length: []int
-+Checked: []bool
++*Add(ix int): 
++*Remove(ix int): 
 +Save(): 
 +*Load(): 
-+*Switch(title string): 
-+Exists(title string): bool
-+Whatsnew(): []string
+}
+}
+package ...main{
+class Anonboard {
++Contents: [][]string
+
 }
 }
 package ...main{
@@ -66,30 +90,6 @@ class Personal {
 +Browser: string
 +Save(): 
 +*Load(): 
-}
-}
-package ...main{
-class Anonboard {
-+Contents: [][]string
-
-}
-}
-package ...main{
-class BB {
-+B: []Board
--saveSnapshot(): Snap
-+*Load(): 
--snapcheck(s Snap): bool
--loadpin(s Snap): []int
--loadall(s Snap, searchstring string): 
--loadgem(ix int): string
--viewurl(ix int): bool
-+*loadboard(ix int, searchstring string): bool
-+*delboard(i int): 
-+*anoncollect(): 
-+*collect(homeuser string): 
-+*addtoboard(input string, anon bool): 
-+*addURLtitle(botindex int, input string, anon bool): 
 }
 }
 package ...main{
