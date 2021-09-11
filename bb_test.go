@@ -106,7 +106,7 @@ func TestMain(t *testing.T) {
 			},
 			expectedOutput: "",
 		},
-		{
+		/*{
 			name: "happy: create a board called 'hello'",
 			action: func() {
 				var wg sync.WaitGroup
@@ -180,7 +180,7 @@ func TestMain(t *testing.T) {
 				wg.Wait()
 			},
 			expectedOutput: "",
-		},
+		},*/
 	}
 	for _, tt := range tests {
 		tt := tt
