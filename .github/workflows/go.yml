@@ -1,7 +1,5 @@
 name: Generate plantuml files (.puml) & png diagram
 
-#TODO: create composite or docker action for puml job (row 27-39)
-
 on:
   push:
     branches:
