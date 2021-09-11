@@ -33,6 +33,7 @@ jobs:
       - name: do test
         shell: bash
         run: |
+             sudo su
              cd ./mainrepo
              make docker
   puml:
