@@ -1,5 +1,13 @@
 @startuml
 package ...main{
+class Last {
++Title: string
++Date: string
++Save(): 
++*Load(): 
+}
+}
+package ...main{
 class Snap {
 +Owner: []string
 +Title: []string
@@ -11,6 +19,40 @@ class Snap {
 +*Switch(title string): 
 +Exists(title string): bool
 +Whatsnew(): []string
+}
+}
+package ...main{
+class Personal {
++Browser: string
++Save(): 
++*Load(): 
+}
+}
+package ...main{
+class Mod {
++Name: []string
++Boardarchive: []string
++Datearchive: []string
++Save(): 
++*Load(): 
++*Collect(): 
++*collect(homeuser string): 
++Check(b Board): bool
++IsMod(): 
++IsUserMod(uname string): bool
++*Archive(item int): 
++*AddMod(user string): 
++*RemoveMod(user string): 
+}
+}
+package ...main{
+class Pin {
++Title: []string
++Date: []string
++*Add(ix int): 
++*Remove(ix int): 
++Save(): 
++*Load(): 
 }
 }
 package ...main{
@@ -32,10 +74,9 @@ class BB {
 }
 }
 package ...main{
-class Personal {
-+Browser: string
-+Save(): 
-+*Load(): 
+class Anonboard {
++Contents: [][]string
+
 }
 }
 package ...main{
@@ -47,47 +88,6 @@ class Board {
 +*Load(filename string): 
 +Delete(filename string): 
 +Save(filename string): 
-}
-}
-package ...main{
-class Pin {
-+Title: []string
-+Date: []string
-+*Add(ix int): 
-+*Remove(ix int): 
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
-class Anonboard {
-+Contents: [][]string
-
-}
-}
-package ...main{
-class Last {
-+Title: string
-+Date: string
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
-class Mod {
-+Name: []string
-+Boardarchive: []string
-+Datearchive: []string
-+Save(): 
-+*Load(): 
-+*Collect(): 
-+*collect(homeuser string): 
-+Check(b Board): bool
-+IsMod(): 
-+IsUserMod(uname string): bool
-+*Archive(item int): 
-+*AddMod(user string): 
-+*RemoveMod(user string): 
 }
 }
 package ...main{
