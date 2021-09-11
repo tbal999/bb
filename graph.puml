@@ -1,20 +1,10 @@
 @startuml
 package ...main{
-class BB {
-+B: []Board
--saveSnapshot(): Snap
+class Last {
++Title: string
++Date: string
++Save(): 
 +*Load(): 
--snapcheck(s Snap): bool
--loadpin(s Snap): []int
--loadall(s Snap, searchstring string): 
--loadgem(ix int): string
--viewurl(ix int): bool
-+*loadboard(ix int, searchstring string): bool
-+*delboard(i int): 
-+*anoncollect(): 
-+*collect(homeuser string): 
-+*addtoboard(input string, anon bool): 
-+*addURLtitle(botindex int, input string, anon bool): 
 }
 }
 package ...main{
@@ -25,6 +15,20 @@ class Anon {
 +Save(): 
 +*Load(): 
 +*Add(title string, contents []string): 
+}
+}
+package ...main{
+class Snap {
++Owner: []string
++Title: []string
++Date: []string
++Length: []int
++Checked: []bool
++Save(): 
++*Load(): 
++*Switch(title string): 
++Exists(title string): bool
++Whatsnew(): []string
 }
 }
 package ...main{
@@ -45,20 +49,6 @@ class Pin {
 }
 }
 package ...main{
-class Snap {
-+Owner: []string
-+Title: []string
-+Date: []string
-+Length: []int
-+Checked: []bool
-+Save(): 
-+*Load(): 
-+*Switch(title string): 
-+Exists(title string): bool
-+Whatsnew(): []string
-}
-}
-package ...main{
 class Mod {
 +Name: []string
 +Boardarchive: []string
@@ -76,20 +66,6 @@ class Mod {
 }
 }
 package ...main{
-class Anonboard {
-+Contents: [][]string
-
-}
-}
-package ...main{
-class Last {
-+Title: string
-+Date: string
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
 class Board {
 +Date: string
 +Owner: string
@@ -98,6 +74,30 @@ class Board {
 +*Load(filename string): 
 +Delete(filename string): 
 +Save(filename string): 
+}
+}
+package ...main{
+class BB {
++B: []Board
+-saveSnapshot(): Snap
++*Load(): 
+-snapcheck(s Snap): bool
+-loadpin(s Snap): []int
+-loadall(s Snap, searchstring string): 
+-loadgem(ix int): string
+-viewurl(ix int): bool
++*loadboard(ix int, searchstring string): bool
++*delboard(i int): 
++*anoncollect(): 
++*collect(homeuser string): 
++*addtoboard(input string, anon bool): 
++*addURLtitle(botindex int, input string, anon bool): 
+}
+}
+package ...main{
+class Anonboard {
++Contents: [][]string
+
 }
 }
 
