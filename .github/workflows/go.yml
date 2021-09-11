@@ -1,4 +1,4 @@
-name: Generate plantuml files (.puml) & png diagram
+name: TEST & PUML
 
 on:
   push:
