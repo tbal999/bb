@@ -32,7 +32,9 @@ jobs:
           fetch-depth: 0
       - name: do test
         shell: bash
-        run: make docker
+        run: |
+             cd ./mainrepo
+             make docker
   puml:
     runs-on: ubuntu-latest
     steps:
