@@ -27,7 +27,7 @@ import (
 
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
-	admin      = "toms" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
+	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
 	boardtitle = "heathens.club bb"
 )
 
@@ -45,11 +45,19 @@ func check(username string) bool {
 }
 
 func main() { //Main entry function where flag vars are set up.d
+	initiateBB(os.Args)
+}
+
+func initiateBB(input []string) {
 	u, err := user.Current()
 	if err != nil {
 		fmt.Println(err)
 	}
-	username = strings.Split(u.HomeDir, "/")[2]
+	var username string
+	dirs := strings.Split(u.HomeDir, "/")
+	if len(dirs) == 3 {
+		username = dirs[2]
+	}
 	if !check(username) {
 		return
 	}
@@ -95,8 +103,8 @@ func main() { //Main entry function where flag vars are set up.d
 		ll.Load()
 		bb.addtoboard(*addPtr, ll.Title, ll.Date, false)
 	default:
-		if len(os.Args) == 2 {
-			if os.Args[1] == "u" {
+		if len(input) == 2 {
+			if input[1] == "u" {
 				newstuff := aa.Whatsnew()
 				if len(newstuff) == 0 {
 					fmt.Printf("No updates")
@@ -111,7 +119,7 @@ func main() { //Main entry function where flag vars are set up.d
 				}
 				fmt.Printf("\n")
 			}
-			if os.Args[1] == "init" { //for ADMIN only - do this once at the start of BB
+			if input[1] == "init" { //for ADMIN only - do this once at the start of BB
 				if username == admin {
 					savedUmask := syscall.Umask(0)
 					err := os.Mkdir("/home/"+username+"/.bbmod", 0777)
@@ -129,7 +137,7 @@ func main() { //Main entry function where flag vars are set up.d
 					fmt.Println("you tried to initiate bb - but you are not the admin. The admin is: " + admin)
 				}
 			}
-			if os.Args[1] == "mod" {
+			if input[1] == "mod" {
 				if username == admin {
 					fmt.Println("###you are admin###")
 					fmt.Println("additional args:")
@@ -152,25 +160,25 @@ mod args:
 				fmt.Println(mm.Name)
 			}
 		}
-		if len(os.Args) == 4 {
-			if os.Args[2] == "del" && ismod {
+		if len(input) == 4 {
+			if input[2] == "del" && ismod {
 				bb.Load()
-				ix, _ := strconv.Atoi(os.Args[3])
+				ix, _ := strconv.Atoi(input[3])
 				mm.Archive(ix)
 				mm.Save()
 				mm.Load()
 			}
 			if os.Args[2] == "+" && username == admin {
-				mm.AddMod(os.Args[3])
+				mm.AddMod(input[3])
 				mm.Save()
 			}
 			if os.Args[2] == "-" && username == admin {
-				mm.RemoveMod(os.Args[3])
+				mm.RemoveMod(input[3])
 				mm.Save()
 			}
 		}
 	}
 	if len(os.Args) == 1 {
-		ViewBB("")
+		ViewBB("", nil, 10)
 	}
 }

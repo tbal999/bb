@@ -1095,95 +1095,108 @@ func (b Board) Save(filename string) {
 }
 
 //View the entire BB
-func ViewBB(search string) {
+func ViewBB(search string, in *os.File, speed int) {
+	if in == nil {
+		in = os.Stdin
+	}
+	ticker := time.NewTicker(time.Duration(speed) * time.Millisecond)
 	for {
-		callclear()
-		bb.loadall(aa, search)
-		search = ""
-		fmt.Printf("--enter 'h' for help--\n")
-		fmt.Printf("Pick Index >> ")
-		Scanner := bufio.NewScanner(os.Stdin)
-		Scanner.Scan()
-		results := Scanner.Text()
-		switch results {
-		case "b":
-			fmt.Printf("Enter client name/path > ")
-			Scanner.Scan()
-			per.Browser = Scanner.Text()
-			per.Save()
-			continue
-		case "q":
-			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-			aa.Save()              //Save snapshot to file
-			return
-		case "r":
-			aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-			aa.Save()              //Save snapshot to file
-			rehash()
-			continue
-		case "w":
-			back += length
-			if len(bb.B) <= length {
-				back = 0
-			} else {
-				if back > len(bb.B)-length {
-					back = len(bb.B) - length
-				}
-			}
-			continue
-		case "s":
-			back -= length
-			if back < 0 {
-				back = 0
-			}
-			continue
-		case "h":
-			callclear()
-			fmt.Println(helpstring)
-			fmt.Scanln()
-			continue
-		}
-		if len(results) > 3 {
-			if len(results) > 4 {
-				if results[0:3] == "new" {
-					newboard(results[4:], bb)
+		select {
+		case <-ticker.C:
+			{
+				callclear()
+				bb.loadall(aa, search)
+				search = ""
+				fmt.Printf("--enter 'h' for help--\n")
+				fmt.Printf("Pick Index >> ")
+				Scanner := bufio.NewScanner(in)
+				Scanner.Scan()
+				results := Scanner.Text()
+				switch results {
+				case "b":
+					fmt.Printf("Enter client name/path > ")
+					Scanner.Scan()
+					per.Browser = Scanner.Text()
+					per.Save()
+					continue
+				case "q":
+					aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+					aa.Save()              //Save snapshot to file
+					return
+				case "r":
+					aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+					aa.Save()              //Save snapshot to file
+					rehash()
+					continue
+				case "w":
+					back += length
+					if len(bb.B) <= length {
+						back = 0
+					} else {
+						if back > len(bb.B)-length {
+							back = len(bb.B) - length
+						}
+					}
+					continue
+				case "s":
+					back -= length
+					if back < 0 {
+						back = 0
+					}
+					continue
+				case "h":
+					callclear()
+					fmt.Println(helpstring)
+					//time.Sleep(2 * time.Duration(time.Second))
+					Scanner.Scan()
 					continue
 				}
-				if results[0:3] == "del" {
-					index, _ := strconv.Atoi(results[4:])
-					bb.delboard(index)
-					continue
+				if len(results) > 3 {
+					if len(results) > 4 {
+						if results[0:3] == "new" {
+							newboard(results[4:], bb)
+							continue
+						}
+						if results[0:3] == "del" {
+							index, _ := strconv.Atoi(results[4:])
+							bb.delboard(index)
+							continue
+						}
+						if results[0:3] == "fil" {
+							search = string(results[4:])
+							continue
+						}
+					}
+					if len(results) > 5 {
+						if results[0:4] == "pin+" {
+							index, _ := strconv.Atoi(string(results[5:]))
+							pin.Add(index)
+							continue
+						}
+						if results[0:4] == "pin-" {
+							index, _ := strconv.Atoi(string(results[5:]))
+							pin.Remove(index)
+							continue
+						}
+					}
+				} else {
+					if results != "" {
+						index, _ := strconv.Atoi(results)
+						back = 0
+						Viewboard(index, search, in)
+						continue
+					}
 				}
-				if results[0:3] == "fil" {
-					search = string(results[4:])
-					continue
-				}
-			}
-			if len(results) > 5 {
-				if results[0:4] == "pin+" {
-					index, _ := strconv.Atoi(string(results[5:]))
-					pin.Add(index)
-					continue
-				}
-				if results[0:4] == "pin-" {
-					index, _ := strconv.Atoi(string(results[5:]))
-					pin.Remove(index)
-					continue
-				}
-			}
-		} else {
-			if results != "" {
-				index, _ := strconv.Atoi(results)
-				back = 0
-				Viewboard(index, search)
-				continue
 			}
 		}
 	}
 }
 
-func Viewboard(index int, search string) {
-	Scanner := bufio.NewScanner(os.Stdin)
+func Viewboard(index int, search string, in *os.File) {
+	if in == nil {
+		in = os.Stdin
+	}
+	Scanner := bufio.NewScanner(in)
 	for {
 		callclear()
 		real := bb.loadboard(index, search)
