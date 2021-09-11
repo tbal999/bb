@@ -5,9 +5,36 @@ name: Generate plantuml files (.puml) & png diagram
 on:
   push:
     branches:
-      - '*'
-  pull_request:
+      - master
 jobs:
+  test:
+   runs-on: ubuntu-latest
+   steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - name: Branch details
+        shell: bash
+        run: |
+             if [ -z "${GITHUB_HEAD_REF}" ]
+             then
+              echo NOT pull request, branch = $(echo ${GITHUB_REF#refs/heads/})
+              echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+             else
+              echo pull request, branch = $(echo ${GITHUB_HEAD_REF})
+              echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV
+             fi
+        id: extract_branch          
+      - name: Checkout branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          path: './mainrepo'
+          fetch-depth: 0
+      - name: do test
+        shell: bash
+        run: make docker
   puml:
     runs-on: ubuntu-latest
     steps:
