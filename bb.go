@@ -15,34 +15,11 @@ package main
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import (
-	"flag"
-	"fmt"
-	"os"
-	"os/user"
-	"strconv"
-	"strings"
-	"syscall"
-)
-
 var (
 	//THESE TWO VARS MUST BE CONFIGURED
 	admin      = "tom" ////////////////////////// the username for administrator. As administrator you MUST run "./bb init" to ensure BB is set up correctly.
 	boardtitle = "heathens.club bb"
 )
-
-func check(username string) bool {
-	if username == admin {
-		return true
-	}
-
-	if _, err := os.Stat("/home/" + admin + "/.bb"); os.IsNotExist(err) {
-		fmt.Printf("the admin: '%s' has not yet ran / initiated bb.\n", admin)
-		return false
-	}
-
-	return true
-}
 
 func main() {
 	initiateBB(os.Args)
