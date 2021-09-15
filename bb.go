@@ -44,6 +44,6 @@ func check(username string) bool {
 	return true
 }
 
-func main() { //Main entry function where flag vars are set up.d
+func main() {
 	initiateBB(os.Args)
 }
