@@ -103,6 +103,20 @@ func init() { //runs at start pre-main to initialize some things.
 	}
 }
 
+
+func check(username string) bool {
+	if username == admin {
+		return true
+	}
+
+	if _, err := os.Stat("/home/" + admin + "/.bb"); os.IsNotExist(err) {
+		fmt.Printf("the admin: '%s' has not yet ran / initiated bb.\n", admin)
+		return false
+	}
+
+	return true
+}
+
 //Clear screen
 func callclear() {
 	value, ok := clear[runtime.GOOS] //runtime.GOOS -> linux, windows, darwin etc.
