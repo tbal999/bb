@@ -5,15 +5,18 @@ import (
 	bot "bb/urlparse"
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil" //deprecated will need to update this soon
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color" //to add colour to output
@@ -102,7 +105,6 @@ func init() { //runs at start pre-main to initialize some things.
 		}
 	}
 }
-
 
 func check(username string) bool {
 	if username == admin {
@@ -1309,7 +1311,6 @@ func switchstring(allPtr *bool, savePtr, addPtr *string, loadPtr *int) string {
 	return out
 }
 
-
 func initiateBB(input []string) {
 	u, err := user.Current()
 	if err != nil {
@@ -1444,4 +1445,3 @@ mod args:
 		ViewBB("", nil, 10)
 	}
 }
-
