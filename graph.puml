@@ -1,31 +1,5 @@
 @startuml
 package ...main{
-class Pin {
-+Title: []string
-+Date: []string
-+*Add(ix int): 
-+*Remove(ix int): 
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
-class Anon {
-+Title: []string
-+Date: []string
-+Board: []Anonboard
-+Save(): 
-+*Load(): 
-+*Add(title string, contents []string): 
-}
-}
-package ...main{
-class Anonboard {
-+Contents: [][]string
-
-}
-}
-package ...main{
 class BB {
 +B: []Board
 -saveSnapshot(): Snap
@@ -52,6 +26,46 @@ class Board {
 +*Load(filename string): 
 +Delete(filename string): 
 +Save(filename string): 
+}
+}
+package ...main{
+class Pin {
++Title: []string
++Date: []string
++*Add(ix int): 
++*Remove(ix int): 
++Save(): 
++*Load(): 
+}
+}
+package ...main{
+class Anonboard {
++Contents: [][]string
+
+}
+}
+package ...main{
+class Anon {
++Title: []string
++Date: []string
++Board: []Anonboard
++Save(): 
++*Load(): 
++*Add(title string, contents []string): 
+}
+}
+package ...main{
+class Snap {
++Owner: []string
++Title: []string
++Date: []string
++Length: []int
++Checked: []bool
++Save(): 
++*Load(): 
++*Switch(title string): 
++Exists(title string): bool
++Whatsnew(): []string
 }
 }
 package ...main{
@@ -84,20 +98,6 @@ class Mod {
 +*Archive(item int): 
 +*AddMod(user string): 
 +*RemoveMod(user string): 
-}
-}
-package ...main{
-class Snap {
-+Owner: []string
-+Title: []string
-+Date: []string
-+Length: []int
-+Checked: []bool
-+Save(): 
-+*Load(): 
-+*Switch(title string): 
-+Exists(title string): bool
-+Whatsnew(): []string
 }
 }
 
