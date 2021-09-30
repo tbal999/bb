@@ -11,24 +11,6 @@ class Board {
 }
 }
 package ...main{
-class Pin {
-+Title: []string
-+Date: []string
-+*Add(ix int): 
-+*Remove(ix int): 
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
-class Last {
-+Title: string
-+Date: string
-+Save(): 
-+*Load(): 
-}
-}
-package ...main{
 class Anon {
 +Title: []string
 +Date: []string
@@ -36,23 +18,6 @@ class Anon {
 +Save(): 
 +*Load(): 
 +*Add(title string, contents []string): 
-}
-}
-package ...main{
-class Mod {
-+Name: []string
-+Boardarchive: []string
-+Datearchive: []string
-+Save(): 
-+*Load(): 
-+*Collect(): 
-+*collect(homeuser string): 
-+Check(b Board): bool
-+IsMod(): 
-+IsUserMod(uname string): bool
-+*Archive(item int): 
-+*AddMod(user string): 
-+*RemoveMod(user string): 
 }
 }
 package ...main{
@@ -64,6 +29,14 @@ class Anonboard {
 package ...main{
 class Personal {
 +Browser: string
++Save(): 
++*Load(): 
+}
+}
+package ...main{
+class Last {
++Title: string
++Date: string
 +Save(): 
 +*Load(): 
 }
@@ -84,6 +57,33 @@ class BB {
 +*collect(homeuser string): 
 +*addtoboard(input string, anon bool): 
 +*addURLtitle(botindex int, input string, anon bool): 
+}
+}
+package ...main{
+class Mod {
++Name: []string
++Boardarchive: []string
++Datearchive: []string
++Save(): 
++*Load(): 
++*Collect(): 
++*collect(homeuser string): 
++Check(b Board): bool
++IsMod(): 
++IsUserMod(uname string): bool
++*Archive(item int): 
++*AddMod(user string): 
++*RemoveMod(user string): 
+}
+}
+package ...main{
+class Pin {
++Title: []string
++Date: []string
++*Add(ix int): 
++*Remove(ix int): 
++Save(): 
++*Load(): 
 }
 }
 package ...main{
