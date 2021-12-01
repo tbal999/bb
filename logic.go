@@ -721,7 +721,7 @@ func (b BB) loadall(s Snap, searchstring string) {
 		}
 		truemax = maximum - back
 	}
-	for index := range b.B {
+	for index := len(b.B) - 1; index >= 0; index-- {
 		if index >= truemin && index <= truemax && !checkindexlist(indexlist, index) && b.B[index].Date != "" {
 			strindex := strconv.Itoa(index)
 			repeat := false
