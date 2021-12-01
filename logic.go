@@ -1331,18 +1331,9 @@ func initiateBB(input []string) {
 	homefilepath = "/home/" + username + "/.bb/"
 	snapfilepath = "/home/" + username + "/.bbsn/"
 	modfilepath = "/home/" + username + "/.bbmod/"
-	err = os.Mkdir("/home/"+username+"/.bb", 0777)
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = os.Mkdir("/home/"+username+"/.bbsn", 0777)
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
-	if err != nil {
-		fmt.Println(err)
-	}
+	_ = os.Mkdir("/home/"+username+"/.bb", 0777)
+	_ = os.Mkdir("/home/"+username+"/.bbsn", 0777)
+	_ = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
 	per.Load()
 	bb.Load()
 	aa.Load()
