@@ -1316,7 +1316,6 @@ func initiateBB(input []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var username string
 	dirs := strings.Split(u.HomeDir, "/")
 	if len(dirs) == 3 {
 		username = dirs[2]
@@ -1331,9 +1330,18 @@ func initiateBB(input []string) {
 	homefilepath = "/home/" + username + "/.bb/"
 	snapfilepath = "/home/" + username + "/.bbsn/"
 	modfilepath = "/home/" + username + "/.bbmod/"
-	_ = os.Mkdir("/home/"+username+"/.bb", 0777)
-	_ = os.Mkdir("/home/"+username+"/.bbsn", 0777)
-	_ = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
+	err = os.Mkdir("/home/"+username+"/.bb", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = os.Mkdir("/home/"+username+"/.bbsn", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
 	per.Load()
 	bb.Load()
 	aa.Load()
