@@ -1163,7 +1163,6 @@ func ViewBB(search string, in *os.File, speed int) {
 				case "h":
 					callclear()
 					fmt.Println(helpstring)
-					//time.Sleep(2 * time.Duration(time.Second))
 					Scanner.Scan()
 					continue
 				}
@@ -1186,12 +1185,16 @@ func ViewBB(search string, in *os.File, speed int) {
 					if len(results) > 5 {
 						if results[0:4] == "pin+" {
 							index, _ := strconv.Atoi(string(results[5:]))
-							pin.Add(index)
+							if ismod {
+								pin.Add(index)
+							}
 							continue
 						}
 						if results[0:4] == "pin-" {
 							index, _ := strconv.Atoi(string(results[5:]))
-							pin.Remove(index)
+							if ismod {
+								pin.Remove(index)
+							}
 							continue
 						}
 					}
@@ -1332,15 +1335,15 @@ func initiateBB(input []string) {
 	modfilepath = "/home/" + username + "/.bbmod/"
 	err = os.Mkdir("/home/"+username+"/.bb", 0777)
 	if err != nil {
-		fmt.Println(err)
+		//
 	}
 	err = os.Mkdir("/home/"+username+"/.bbsn", 0777)
 	if err != nil {
-		fmt.Println(err)
+		//
 	}
 	err = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
 	if err != nil {
-		fmt.Println(err)
+		//
 	}
 	per.Load()
 	bb.Load()
