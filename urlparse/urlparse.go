@@ -1,24 +1,34 @@
 package urlparse
 
 import (
-	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	gemini "github.com/makeworld-the-better-one/go-gemini"
 	"golang.org/x/net/html"
 )
 
+const (
+	fetchTimeout = 5 * time.Second
+	maxBodyBytes = 1 << 20 // only the <title> is needed - never read more than 1MB
+)
+
+var httpClient = &http.Client{Timeout: fetchTimeout}
+
+var geminiClient = &gemini.Client{ConnectTimeout: fetchTimeout, ReadTimeout: fetchTimeout}
+
 func HTTPget(url string) string {
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return "Nothing, because there was a response error!"
 	}
 	// do this now so it won't be forgotten
 	defer resp.Body.Close()
 	// reads html as a slice of bytes
-	html, err := ioutil.ReadAll(resp.Body)
+	html, err := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes))
 	if err != nil {
 		return "Nothing, because there was a html parse error!"
 	}
@@ -56,46 +66,48 @@ func getTitle(HTMLString string) (title string) {
 	}
 }
 
+// gemgrabtitle fetches a gemini page and returns its status, meta and first heading.
+// An unreachable server returns status 0 and an empty title.
 func gemgrabtitle(url string) (int, string, string) {
+	response, err := geminiClient.Fetch(url)
+	if err != nil {
+		return 0, "", ""
+	}
+	defer response.Body.Close()
 	var title string
-	a := gemini.Client{}
-	response, err := a.Fetch(url)
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = response.SetReadTimeout(5)
-	if err != nil {
-		fmt.Println(err)
-	}
-	statuscode := response.Status
-	meta := response.Meta
-	data, _ := ioutil.ReadAll(response.Body)
-	bodydata := strings.Split(string(data), "\n")
-	for index := range bodydata {
-		if len(bodydata[index]) > 0 {
-			if string(bodydata[index][0]) == "#" {
-				title = string(bodydata[index])
-				break
-			}
+	data, _ := io.ReadAll(io.LimitReader(response.Body, maxBodyBytes))
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, "#") {
+			title = line
+			break
 		}
 	}
-	return statuscode, meta, title
+	return response.Status, response.Meta, title
 }
 
-func GEMGet(url string) string {
-	iter := 0
-	maxNumber := 2
-	for {
-		statuscode, meta, title := gemgrabtitle(url)
-		switch statuscode {
-		case 31:
-			url = meta
-			iter++
-			if iter >= maxNumber {
-				return "Too many redirects"
-			}
-		default:
+func GEMGet(rawURL string) string {
+	const maxRedirects = 2
+	for iter := 0; ; iter++ {
+		statuscode, meta, title := gemgrabtitle(rawURL)
+		if statuscode != 30 && statuscode != 31 { // 30 = temporary, 31 = permanent redirect
 			return title
 		}
+		if iter >= maxRedirects {
+			return "Too many redirects"
+		}
+		rawURL = resolve(rawURL, meta)
 	}
+}
+
+// resolve handles redirects to relative URLs.
+func resolve(base, ref string) string {
+	b, err := url.Parse(base)
+	if err != nil {
+		return ref
+	}
+	r, err := url.Parse(ref)
+	if err != nil {
+		return ref
+	}
+	return b.ResolveReference(r).String()
 }

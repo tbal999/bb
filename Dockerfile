@@ -1,14 +1,8 @@
-FROM golang:1.16-alpine
+FROM golang:1.23-alpine
 
-RUN set -ex; \
-    apk update; \
-    apk add --no-cache git
-RUN apk add build-base
-
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 
-ENV GOPATH=""
-
-RUN go mod tidy
-
-CMD CGO_ENABLED=1 go test -v ./... $(go list ./...)
+CMD ["sh", "-c", "go vet ./... && go test -v ./..."]

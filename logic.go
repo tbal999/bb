@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil" //deprecated will need to update this soon
 	"os"
 	"os/exec"
 	"os/user"
@@ -16,11 +15,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/fatih/color" //to add colour to output
-	"mvdan.cc/xurls/v2"      //to parse URLs
 
 	"github.com/pterm/pterm" //to make terminal pretty
 )
@@ -32,7 +29,8 @@ var (
 	username       string                          // store the username of the individual currently using BB
 	homefilepath   string                          // the path for where the bb config files are
 	snapfilepath   string                          // the path for where the bb snapshot file is
-	masterfilepath = "/home/" + admin + "/.bbmod/" // mods will be added to this file. Will also store the anonymous file.
+	homeroot       = "/home/"                      // folder holding every user's home folder (tests point this at a temp dir)
+	masterfilepath = homeroot + admin + "/.bbmod/" // mods will be added to this file. Will also store the anonymous file.
 	modfilepath    string
 	aa             Snap     // Snapshot object
 	bb             BB       // BB object
@@ -47,8 +45,6 @@ var (
 	pinname        = "bbp1n.json"
 	pername        = "bbp3r.json"
 	back           int //board scroll logic
-	maximum        int //board scroll logic
-	minimum        int //board scroll logic
 	length         = 20
 	helpstring     = `
 ===BB HELP===
@@ -92,7 +88,7 @@ PRESS ENTER TO CONTINUE...
 					`
 )
 
-//GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 func init() { //runs at start pre-main to initialize some things.
 	pterm.EnableOutput()
 	clear = make(map[string]func()) //Initialize it
@@ -111,7 +107,7 @@ func check(username string) bool {
 		return true
 	}
 
-	if _, err := os.Stat("/home/" + admin + "/.bb"); os.IsNotExist(err) {
+	if _, err := os.Stat(homeroot + admin + "/.bb"); os.IsNotExist(err) {
 		fmt.Printf("the admin: '%s' has not yet ran / initiated bb.\n", admin)
 		return false
 	}
@@ -119,7 +115,15 @@ func check(username string) bool {
 	return true
 }
 
-//Clear screen
+// Work out where every bb file lives for the admin and the current user.
+func setPaths() {
+	masterfilepath = homeroot + admin + "/.bbmod/"
+	homefilepath = homeroot + username + "/.bb/"
+	snapfilepath = homeroot + username + "/.bbsn/"
+	modfilepath = homeroot + username + "/.bbmod/"
+}
+
+// Clear screen
 func callclear() {
 	value, ok := clear[runtime.GOOS] //runtime.GOOS -> linux, windows, darwin etc.
 	if ok {                          //if we defined a clear func for that platform:
@@ -136,15 +140,21 @@ func intmux(link, client string) {
 	}
 }
 
-//Grab a timestamp.
+// Grab a timestamp.
 func timestamp() string {
 	t := time.Now()
 	var x = t.Format("2006-01-02 15:04:05")
 	return x
 }
 
-//create a new board for the global BB variable.
+// create a new board for the global BB variable.
 func newboard(title string, bb BB) {
+	title = strings.TrimSpace(clean(title))
+	if title == "" || strings.ContainsAny(title, "/\\") || strings.HasPrefix(title, ".") {
+		fmt.Println("Board titles can't be empty, contain slashes, or start with '.'. Press enter to continue")
+		fmt.Scanln()
+		return
+	}
 	for index := range bb.B {
 		if bb.B[index].Title == title {
 			fmt.Println("Please use unique title. Press enter to continue")
@@ -162,7 +172,7 @@ func newboard(title string, bb BB) {
 	fmt.Println("saved " + title)
 }
 
-//remove a board from BB at a specific index
+// remove a board from BB at a specific index
 func remove(slice []Board, s int) []Board {
 	if len(slice) <= 1 {
 		return []Board{}
@@ -176,30 +186,7 @@ func modremove(s []string, index int) []string {
 	return append(ret, s[index+1:]...)
 }
 
-//Does 2D string array already have a specific string in it?
-func alreadyhas(s [][]string, st string) bool {
-	for index := range s {
-		for index2 := range s[index] {
-			if s[index][index2] == st {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func grabgeminiurl(input string) string {
-	if strings.Contains(input, "gemini://") {
-		rxRelaxed := xurls.Relaxed()
-		astring := rxRelaxed.FindString(input)
-		if astring != "" { //--------------------------GEM grap input print out a fancy Title
-			return "gemi" + astring
-		}
-	}
-	return ""
-}
-
-//Add a slice to a 2d slice
+// Add a slice to a 2d slice
 func add2slice(ax *[][]string, b []string) [][]string {
 	a := *ax
 	a = append(a, b)
@@ -207,30 +194,31 @@ func add2slice(ax *[][]string, b []string) [][]string {
 	return a
 }
 
-//Grab a list folders in home dir (to grab the Usernames)
+// Grab a list folders in home dir (to grab the Usernames)
 func ufolderlist() []string {
 	output := []string{}
-	files, _ := ioutil.ReadDir("/home/")
+	files, _ := os.ReadDir(homeroot)
 	for _, f := range files {
 		output = append(output, f.Name())
 	}
 	return output
 }
 
-//Refresh the BB data with any new inputs.
+// Refresh the BB data with any new inputs.
+// This only reads. The shared pin and anon files are written at the moment they change,
+// so a refresh never overwrites what other users have saved since we last loaded them.
 func rehash() {
-	pin.Save()
-	an.Save()
+	pin.Load()
 	bb = BB{} //Clear BB
 	bb.Load() //Reload BB
 }
 
-//Personal METHODS//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Personal METHODS//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 type Personal struct {
 	Browser string
 }
 
-//Save file
+// Save file
 func (p Personal) Save() {
 	Base := &p
 	output, err := json.MarshalIndent(Base, "", "\t")
@@ -238,16 +226,16 @@ func (p Personal) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(snapfilepath+pername, output, 0666)
+	err = os.WriteFile(snapfilepath+pername, output, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load file
+// Load file
 func (p *Personal) Load() {
 	item := *p
-	jsonFile, _ := ioutil.ReadFile(snapfilepath + pername)
+	jsonFile, _ := os.ReadFile(snapfilepath + pername)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	if item.Browser == "" {
 		item.Browser = "amfora"
@@ -263,16 +251,17 @@ type Pin struct {
 }
 
 func (P *Pin) Add(ix int) {
-	p := *P
-	titletosave := ""
-	datetosave := ""
-	exists := false
-	for index2 := range bb.B {
-		if index2 == ix {
-			titletosave = bb.B[index2].Title
-			datetosave = bb.B[index2].Date
-		}
+	if ix < 0 || ix >= len(bb.B) {
+		return
 	}
+	if err := P.Load(); err != nil && !os.IsNotExist(err) {
+		fmt.Println("could not read the pin file, not pinning:", err)
+		return
+	}
+	p := *P
+	titletosave := bb.B[ix].Title
+	datetosave := bb.B[ix].Date
+	exists := false
 	for index := range p.Title {
 		if p.Title[index] == titletosave && p.Date[index] == datetosave {
 			exists = true
@@ -287,16 +276,16 @@ func (P *Pin) Add(ix int) {
 }
 
 func (P *Pin) Remove(ix int) {
-	p := *P
-	titletodel := ""
-	datetodel := ""
-	for index2 := range bb.B {
-		if index2 == ix {
-			titletodel = bb.B[index2].Title
-			datetodel = bb.B[index2].Date
-			break
-		}
+	if ix < 0 || ix >= len(bb.B) {
+		return
 	}
+	if err := P.Load(); err != nil && !os.IsNotExist(err) {
+		fmt.Println("could not read the pin file, not unpinning:", err)
+		return
+	}
+	p := *P
+	titletodel := bb.B[ix].Title
+	datetodel := bb.B[ix].Date
 	for index := range p.Title {
 		if p.Title[index] == titletodel && p.Date[index] == datetodel {
 			p.Title = modremove(p.Title, index)
@@ -308,7 +297,7 @@ func (P *Pin) Remove(ix int) {
 	P.Save()
 }
 
-//Save mod file
+// Save mod file
 func (p Pin) Save() {
 	Base := &p
 	output, err := json.MarshalIndent(Base, "", "\t")
@@ -316,18 +305,30 @@ func (p Pin) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(masterfilepath+pinname, output, 0666)
+	err = os.WriteFile(masterfilepath+pinname, output, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load pins
-func (p *Pin) Load() {
-	item := *p
-	jsonFile, _ := ioutil.ReadFile(masterfilepath + pinname)
-	_ = json.Unmarshal([]byte(jsonFile), &item)
+// Load pins. The pin file is shared and world-writable, so mismatched lists are trimmed rather than trusted.
+// On error the pins already in memory are kept.
+func (p *Pin) Load() error {
+	jsonFile, err := os.ReadFile(masterfilepath + pinname)
+	if err != nil {
+		return err
+	}
+	item := Pin{}
+	if err := json.Unmarshal(jsonFile, &item); err != nil {
+		return err
+	}
+	n := len(item.Title)
+	if len(item.Date) < n {
+		n = len(item.Date)
+	}
+	item.Title, item.Date = item.Title[:n], item.Date[:n]
 	*p = item
+	return nil
 }
 
 ///Lastfile & Last METHODS //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,7 +338,7 @@ type Last struct {
 	Date  string
 }
 
-//Save last file
+// Save last file
 func (l Last) Save() {
 	Base := &l
 	output, err := json.MarshalIndent(Base, "", "\t")
@@ -345,30 +346,30 @@ func (l Last) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(snapfilepath+lastname, output, 0644)
+	err = os.WriteFile(snapfilepath+lastname, output, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load mods
+// Load mods
 func (l *Last) Load() {
 	item := *l
-	jsonFile, _ := ioutil.ReadFile(snapfilepath + lastname)
+	jsonFile, _ := os.ReadFile(snapfilepath + lastname)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	*l = item
 }
 
 ///Moderator & Mod METHODS //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//Only the administrator can be a moderator at the moment
+// Only the administrator can be a moderator at the moment
 type Mod struct {
 	Name         []string
 	Boardarchive []string
 	Datearchive  []string
 }
 
-//Save mod file
+// Save mod file
 func (m Mod) Save() {
 	if ismod {
 		Base := &m
@@ -377,18 +378,18 @@ func (m Mod) Save() {
 			fmt.Println(err)
 			return
 		}
-		err = ioutil.WriteFile(modfilepath+"mod.json", output, 0644)
+		err = os.WriteFile(modfilepath+"mod.json", output, 0644)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 }
 
-//Load mods
+// Load mods
 func (m *Mod) Load() {
 	item := *m
-	jsonFile, _ := ioutil.ReadFile(masterfilepath + "mod.json") //no need to worry about error
-	_ = json.Unmarshal([]byte(jsonFile), &item)                 //but leaving it empty in case one day... i need to worry
+	jsonFile, _ := os.ReadFile(masterfilepath + "mod.json") //no need to worry about error
+	_ = json.Unmarshal([]byte(jsonFile), &item)             //but leaving it empty in case one day... i need to worry
 	item.Collect()
 	*m = item
 }
@@ -402,14 +403,14 @@ func (m *Mod) Collect() {
 
 func (m *Mod) collect(homeuser string) {
 	if m.IsUserMod(homeuser) {
-		modp := "/home/" + homeuser + "/.bbmod/"
-		learnfolder, err := ioutil.ReadDir(modp)
+		modp := homeroot + homeuser + "/.bbmod/"
+		learnfolder, err := os.ReadDir(modp)
 		if err == nil {
 			for _, learnfile := range learnfolder {
 				if learnfile.Name() == "mod.json" {
 					mm := Mod{}
-					jsonFile, _ := ioutil.ReadFile(modp + "mod.json") //no need to worry about error
-					_ = json.Unmarshal([]byte(jsonFile), &mm)         //but leaving it empty in case one day... i need to worry
+					jsonFile, _ := os.ReadFile(modp + "mod.json") //no need to worry about error
+					_ = json.Unmarshal([]byte(jsonFile), &mm)     //but leaving it empty in case one day... i need to worry
 					for index := range mm.Boardarchive {
 						exists := false
 						for index2 := range m.Boardarchive {
@@ -428,7 +429,7 @@ func (m *Mod) collect(homeuser string) {
 	}
 }
 
-//Check if a board is on the archive list - this is alternative to delete. If a board is on board archive it won't load
+// Check if a board is on the archive list - this is alternative to delete. If a board is on board archive it won't load
 func (m Mod) Check(b Board) bool {
 	for index := range m.Boardarchive {
 		if m.Boardarchive[index] == b.Title && m.Datearchive[index] == b.Date {
@@ -438,7 +439,7 @@ func (m Mod) Check(b Board) bool {
 	return false
 }
 
-//Checks if current user is a mod
+// Checks if current user is a mod
 func (m Mod) IsMod() {
 	for index := range m.Name {
 		if m.Name[index] == username {
@@ -447,7 +448,7 @@ func (m Mod) IsMod() {
 	}
 }
 
-//Checks if current user is a mod
+// Checks if current user is a mod
 func (m Mod) IsUserMod(uname string) bool {
 	for index := range m.Name {
 		if m.Name[index] == uname {
@@ -457,7 +458,7 @@ func (m Mod) IsUserMod(uname string) bool {
 	return false
 }
 
-//Lets moderators archive a board by indoex
+// Lets moderators archive a board by indoex
 func (m *Mod) Archive(item int) {
 	for index := range bb.B {
 		if index == item {
@@ -469,7 +470,7 @@ func (m *Mod) Archive(item int) {
 	}
 }
 
-//Lets you add a mod if you are admin
+// Lets you add a mod if you are admin
 func (m *Mod) AddMod(user string) {
 	for index := range m.Name {
 		if m.Name[index] == user {
@@ -479,7 +480,7 @@ func (m *Mod) AddMod(user string) {
 	m.Name = append(m.Name, user)
 }
 
-//Lets you add a mod if you are admin
+// Lets you add a mod if you are admin
 func (m *Mod) RemoveMod(user string) {
 	for index := range m.Name {
 		if m.Name[index] == user {
@@ -501,7 +502,7 @@ type Anonboard struct {
 	Contents [][]string
 }
 
-//Save mod file
+// Save mod file
 func (a Anon) Save() {
 	Base := &a
 	output, err := json.MarshalIndent(Base, "", "\t")
@@ -509,42 +510,64 @@ func (a Anon) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(masterfilepath+anonname, output, 0666)
+	err = os.WriteFile(masterfilepath+anonname, output, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load mods
-func (a *Anon) Load() {
-	item := *a
-	jsonFile, _ := ioutil.ReadFile(masterfilepath + anonname)
-	_ = json.Unmarshal([]byte(jsonFile), &item)
+// Load anon posts. The anon file is shared and world-writable, so its contents are checked rather than trusted.
+// On error the posts already in memory are kept.
+func (a *Anon) Load() error {
+	jsonFile, err := os.ReadFile(masterfilepath + anonname)
+	if err != nil {
+		return err
+	}
+	item := Anon{}
+	if err := json.Unmarshal(jsonFile, &item); err != nil {
+		return err
+	}
+	n := len(item.Title)
+	if len(item.Date) < n {
+		n = len(item.Date)
+	}
+	if len(item.Board) < n {
+		n = len(item.Board)
+	}
+	item.Title, item.Date, item.Board = item.Title[:n], item.Date[:n], item.Board[:n]
+	for index := range item.Board {
+		item.Board[index].Contents = validRows(item.Board[index].Contents)
+	}
 	*a = item
+	return nil
 }
 
 func (a *Anon) Add(title, date string, contents []string) {
-	A := *a
-	exists := false
-	for index := range A.Title {
-		if A.Title[index] == title && A.Date[index] == date {
-			exists = true
+	for index := range a.Title {
+		if a.Title[index] == title && a.Date[index] == date {
 			a.Board[index].Contents = append(a.Board[index].Contents, contents)
+			return
 		}
 	}
-	if !exists {
-		A.Title = append(A.Title, title)
-		A.Date = append(A.Date, date)
-		board := Anonboard{}
-		board.Contents = append(board.Contents, contents)
-		A.Board = append(A.Board, board)
+	a.Title = append(a.Title, title)
+	a.Date = append(a.Date, date)
+	a.Board = append(a.Board, Anonboard{Contents: [][]string{contents}})
+}
+
+// Post an anonymous message. Re-reads the shared file first so posts other users made
+// since we loaded it are kept, then writes it straight back.
+func postAnon(title, date string, item []string) {
+	if err := an.Load(); err != nil && !os.IsNotExist(err) {
+		fmt.Println("could not read the anon file, message not posted:", err)
+		return
 	}
-	*a = A
+	an.Add(title, date, item)
+	an.Save()
 }
 
 ///Snapshot & Snapshot METHODS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//Snap is struct for storing snapshot of every board in BB
+// Snap is struct for storing snapshot of every board in BB
 type Snap struct {
 	Owner   []string
 	Title   []string
@@ -553,7 +576,7 @@ type Snap struct {
 	Checked []bool
 }
 
-//Save snapshot to json
+// Save snapshot to json
 func (s Snap) Save() {
 	Base := &s
 	output, err := json.MarshalIndent(Base, "", "\t")
@@ -561,47 +584,33 @@ func (s Snap) Save() {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(snapfilepath+snapname, output, 0644)
+	err = os.WriteFile(snapfilepath+snapname, output, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//Load snapshot to json
+// Load snapshot to json
 func (s *Snap) Load() {
 	item := *s
-	jsonFile, _ := ioutil.ReadFile(snapfilepath + snapname)
+	jsonFile, _ := os.ReadFile(snapfilepath + snapname)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
 	*s = item
 }
 
-//If we've just read a board, we want to switch that board from 'not checked' to 'checked'.
+// If we've just read a board, we want to switch that board from 'not checked' to 'checked'.
 func (s *Snap) Switch(title, date string) {
-	S := *s
-	for index := range S.Title {
-		if S.Title[index] == title && S.Date[index] == date {
-			S.Checked[index] = true
-		}
+	if i := s.index(title, date); i >= 0 {
+		s.Checked[i] = true
 	}
-	*s = S
 }
 
-func (s Snap) Exists(title, date string) bool {
-	for index := range s.Title {
-		if s.Title[index] == title && s.Date[index] == date {
-			return true
-		}
-	}
-	return false
-}
-
+// Whatsnew lists the boards with posts since the snapshot was saved.
 func (s Snap) Whatsnew() []string {
 	news := []string{}
-	for index := range s.Title {
-		for index2 := range bb.B {
-			if bb.B[index2].Title == s.Title[index] && bb.B[index2].Date == s.Date[index] && len(bb.B[index2].Contents) != s.Length[index] {
-				news = append(news, bb.B[index2].Title)
-			}
+	for _, board := range bb.B {
+		if s.unread(board) {
+			news = append(news, board.Title)
 		}
 	}
 	return news
@@ -609,12 +618,12 @@ func (s Snap) Whatsnew() []string {
 
 ///BB & BB METHODS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//BB is the main struct holding all boards.
+// BB is the main struct holding all boards.
 type BB struct {
 	B []Board
 }
 
-//Save a snapshot of the global BB obj to global Snap obj
+// Save a snapshot of the global BB obj to global Snap obj
 func (b BB) saveSnapshot() Snap {
 	s := Snap{}
 	for index := range b.B {
@@ -627,7 +636,7 @@ func (b BB) saveSnapshot() Snap {
 	return s
 }
 
-//Load all the boards to BB
+// Load all the boards to BB
 func (b *BB) Load() {
 	an.Load()
 	list := ufolderlist()
@@ -637,274 +646,172 @@ func (b *BB) Load() {
 	b.anoncollect()
 }
 
-//Iterate through snapshot to check if something has changed (at BB level)
+// index finds a board in the snapshot, or returns -1.
+func (s Snap) index(title, date string) int {
+	for i := range s.Title {
+		if i < len(s.Date) && i < len(s.Length) && i < len(s.Checked) && s.Title[i] == title && s.Date[i] == date {
+			return i
+		}
+	}
+	return -1
+}
+
+// unread reports whether a board has posts that arrived since the snapshot and haven't been viewed yet.
+func (s Snap) unread(b Board) bool {
+	i := s.index(b.Title, b.Date)
+	return i >= 0 && len(b.Contents) != s.Length[i] && !s.Checked[i]
+}
+
+// Iterate through snapshot to check if something has changed (at BB level)
 func (b BB) snapcheck(s Snap) bool {
-	for index := range b.B {
-		for index2 := range s.Title {
-			if b.B[index].Title == s.Title[index2] && b.B[index].Date == s.Date[index2] {
-				if len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func (b BB) loadpin(s Snap) []int {
-	indexlist := []int{}
-	for index := range b.B {
-		for indexp := range pin.Title {
-			if pin.Title[indexp] == b.B[index].Title && pin.Date[indexp] == b.B[index].Date {
-				indexlist = append(indexlist, index)
-				strindex := strconv.Itoa(index)
-				repeat := false
-				for index2 := range s.Title {
-					if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
-						color.Cyan(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
-						repeat = true
-						break
-					}
-					if !s.Exists(b.B[index].Title, b.B[index].Date) {
-						color.Green(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
-						repeat = true
-						break
-					}
-				}
-				if !repeat {
-					fmt.Println(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date + " **PINNED**")
-				}
-			} else {
-				continue
-			}
-		}
-	}
-	fmt.Println("")
-	return indexlist
-}
-
-func checkindexlist(list []int, index int) bool {
-	for ix := range list {
-		if list[ix] == index {
+	for _, board := range b.B {
+		if s.unread(board) {
 			return true
 		}
 	}
 	return false
 }
 
-//Load all contents of BB to the screen.
+// pageRange returns the first and last index to show from n items (newest last),
+// scrolled back by the global `back`. A search shows everything.
+func pageRange(n int, searching bool) (first, last int) {
+	if searching || n <= length {
+		return 0, n - 1
+	}
+	last = n - 1 - back
+	if last < length-1 {
+		last = length - 1
+	}
+	return last - length + 1, last
+}
+
+// printBoardLine prints one index entry: green if the board is new since the last visit,
+// cyan if it has unread posts.
+func printBoardLine(index int, b Board, s Snap, suffix string) {
+	line := strconv.Itoa(index) + ") " + b.Title + " | author: " + b.Owner + " | " + b.Date + suffix
+	switch {
+	case s.index(b.Title, b.Date) < 0:
+		color.Green(line)
+	case s.unread(b):
+		color.Cyan(line)
+	default:
+		fmt.Println(line)
+	}
+}
+
+// loadpin prints the pinned boards and returns their indexes.
+func (b BB) loadpin(s Snap) map[int]bool {
+	pinned := map[int]bool{}
+	for index, board := range b.B {
+		for i := range pin.Title {
+			if pin.Title[i] == board.Title && pin.Date[i] == board.Date {
+				pinned[index] = true
+				printBoardLine(index, board, s, " **PINNED**")
+				break
+			}
+		}
+	}
+	fmt.Println("")
+	return pinned
+}
+
+// Load all contents of BB to the screen.
 func (b BB) loadall(s Snap, searchstring string) {
 	header := pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgBlue))
-	change := bb.snapcheck(aa)
-	var truemin int
-	var truemax int
-	if change {
-		pterm.Println(header.Sprint("-- " + boardtitle + " -- [NEW]"))
-	} else {
-		pterm.Println(header.Sprint("-- " + boardtitle + " --"))
+	heading := "-- " + boardtitle + " --"
+	if b.snapcheck(s) {
+		heading += " [NEW]"
 	}
-	indexlist := b.loadpin(s)
-	if len(b.B) <= length {
-		minimum = 0
-		maximum = len(b.B)
-	} else {
-		minimum = len(b.B) - length
-		maximum = len(b.B)
-	}
-	if searchstring != "" {
-		truemin = 0
-		truemax = len(b.B)
-	} else {
-		truemin = minimum - back
-		if truemin < 0 {
-			truemin = 0
-		}
-		truemax = maximum - back
-	}
-	for index := len(b.B) - 1; index >= 0; index-- {
-		if index >= truemin && index <= truemax && !checkindexlist(indexlist, index) && b.B[index].Date != "" {
-			strindex := strconv.Itoa(index)
-			repeat := false
-			searching := false
-			for index2 := range s.Title {
-				if searchstring != "" {
-					if !strings.Contains(b.B[index].Title, searchstring) && !strings.Contains(b.B[index].Date, searchstring) {
-						searching = true
-						break
-					}
-				}
-				if b.B[index].Title == s.Title[index2] && len(b.B[index].Contents) != s.Length[index2] && !s.Checked[index2] {
-					color.Cyan(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
-					repeat = true
-					break
-				}
-				if !s.Exists(b.B[index].Title, b.B[index].Date) {
-					color.Green(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
-					repeat = true
-					break
-				}
-
-			}
-			if !repeat && !searching {
-				fmt.Println(strindex + ") " + b.B[index].Title + " | author: " + b.B[index].Owner + " | " + b.B[index].Date)
-			}
-		} else {
-			continue
-		}
-	}
+	pterm.Println(header.Sprint(heading))
+	pinned := b.loadpin(s)
 	if len(b.B) == 0 {
 		fmt.Println("there are no boards")
-	} else {
-		fmt.Println("")
-		fmt.Printf("BB Length: %d, range: %d to %d", len(b.B), truemin, truemax)
-		fmt.Printf("\n\n")
+		return
 	}
+	first, last := pageRange(len(b.B), searchstring != "")
+	for index := last; index >= first; index-- {
+		board := b.B[index]
+		if pinned[index] || board.Date == "" {
+			continue
+		}
+		if searchstring != "" && !strings.Contains(board.Title, searchstring) && !strings.Contains(board.Date, searchstring) {
+			continue
+		}
+		printBoardLine(index, board, s, "")
+	}
+	fmt.Printf("\nBB Length: %d, showing %d to %d\n\n", len(b.B), first, last)
 }
 
+// loadgem returns the gemini link in message urlindex of board ix, or "".
 func (b BB) loadgem(ix, urlindex int) string {
-	var link string
-	for index := range b.B {
-		if index == ix {
-			for index2 := range b.B[index].Contents {
-				if index2 == urlindex {
-					if len(b.B[index].Contents[index2]) == 3 {
-						link = grabgeminiurl(b.B[index].Contents[index2][1])
-						break
-					}
-				}
-			}
-		}
+	if ix < 0 || ix >= len(b.B) || urlindex < 0 || urlindex >= len(b.B[ix].Contents) {
+		return ""
 	}
-	return link
+	return grabgeminiurl(b.B[ix].Contents[urlindex][1])
 }
 
-func (b BB) viewurl(ix int) bool {
-	change := bb.snapcheck(aa)
-	var real bool
-	var truemin int
-	var truemax int
-	for index := range b.B {
-		if index == ix && b.B[index].Owner != "" && b.B[index].Date != "" {
-			aa.Switch(b.B[index].Title, b.B[index].Date)
-			sort.Slice(b.B[index].Contents, func(i, j int) bool { return b.B[index].Contents[i][0] < b.B[index].Contents[j][0] })
-			real = true
-			ll.Title = b.B[index].Title
-			ll.Date = b.B[index].Date
-			ll.Save()
-			if !change {
-				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
-			} else {
-				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
-			}
-			fmt.Println("")
-			if len(b.B[index].Contents) <= length {
-				minimum = 0
-				maximum = len(b.B[index].Contents)
-			} else {
-				minimum = len(b.B[index].Contents) - length
-				maximum = len(b.B[index].Contents)
-			}
-			truemin = minimum - back
-			if truemin < 0 {
-				truemin = 0
-			}
-			truemax = maximum - back
-			for index2 := range b.B[index].Contents {
-				if index2 >= truemin && index2 <= truemax {
-					urlindex := strconv.Itoa(index2)
-					if len(b.B[index].Contents[index2]) == 3 && grabgeminiurl(b.B[index].Contents[index2][1]) != "" {
-						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-							color.Cyan(urlindex + ") " + grabgeminiurl(b.B[index].Contents[index2][1]))
-						} else {
-							fmt.Println(urlindex + ") " + grabgeminiurl(b.B[index].Contents[index2][1]))
-						}
-					}
-				} else {
-					continue
-				}
-			}
-		}
-	}
-	if !real {
-		fmt.Println("invalid index")
-		return false
-	} else {
-		fmt.Println("")
-		fmt.Printf("Board length: %d, range: %d to %d", len(b.B[ix].Contents), truemin, truemax)
-		fmt.Printf("\n\n")
-	}
-	return true
-}
-
-//Load specific board up.
+// Load specific board up.
 func (b *BB) loadboard(ix int, searchstring string) bool {
-	btp := &pterm.BasicTextPrinter{}
-	bgp := btp.WithStyle(&pterm.ThemeDefault.SuccessMessageStyle)
-	change := bb.snapcheck(aa)
-	var real bool
-	var truemin int
-	var truemax int
-	for index := range b.B {
-		if index == ix && b.B[index].Owner != "" && b.B[index].Date != "" {
-			aa.Switch(b.B[index].Title, b.B[index].Date)
-			sort.Slice(b.B[index].Contents, func(i, j int) bool { return b.B[index].Contents[i][0] < b.B[index].Contents[j][0] })
-			real = true
-			ll.Title = b.B[index].Title
-			ll.Date = b.B[index].Date
-			ll.Save()
-			if change {
-				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner + " ^new")
-			} else {
-				pterm.DefaultSection.Println(b.B[index].Title + " | " + b.B[index].Owner)
-			}
-			fmt.Println("")
-			if len(b.B[index].Contents) <= length {
-				minimum = 0
-				maximum = len(b.B[index].Contents)
-			} else {
-				minimum = len(b.B[index].Contents) - length
-				maximum = len(b.B[index].Contents)
-			}
-			if searchstring != "" {
-				truemin = 0
-				truemax = len(b.B[index].Contents)
-			} else {
-				truemin = minimum - back
-				if truemin < 0 {
-					truemin = 0
-				}
-				truemax = maximum - back
-			}
-			for index2 := range b.B[index].Contents {
-				if index2 >= truemin && index2 <= truemax {
-					if len(b.B[index].Contents[index2]) == 3 {
-						if searchstring != "" && !(strings.Contains(b.B[index].Contents[index2][1], searchstring)) && !(strings.Contains(b.B[index].Contents[index2][0], searchstring)) {
-							continue
-						}
-						if strings.Contains(b.B[index].Contents[index2][1], "@"+username) {
-							bgp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
-						} else {
-							btp.Println(b.B[index].Contents[index2][0] + " <" + b.B[index].Contents[index2][2] + "> " + b.B[index].Contents[index2][1])
-						}
-					}
-				} else {
-					continue
-				}
-			}
-		}
-	}
-	if !real {
+	return b.showBoard(ix, searchstring, false)
+}
+
+// List the gemini links on a board, numbered by message, for the 'l' command.
+func (b *BB) viewurl(ix int) bool {
+	return b.showBoard(ix, "", true)
+}
+
+// showBoard prints board ix (or only its gemini links), marks it as read and
+// remembers it as the board new messages are added to.
+func (b *BB) showBoard(ix int, searchstring string, linksOnly bool) bool {
+	if ix < 0 || ix >= len(b.B) || b.B[ix].Owner == "" || b.B[ix].Date == "" {
 		fmt.Println("invalid index")
 		return false
-	} else {
-		fmt.Println("")
-		fmt.Printf("Board length: %d, range: %d to %d", len(b.B[ix].Contents), truemin, truemax)
-		fmt.Printf("\n\n")
 	}
+	change := b.snapcheck(aa)
+	board := &b.B[ix]
+	aa.Switch(board.Title, board.Date)
+	sort.SliceStable(board.Contents, func(i, j int) bool { return board.Contents[i][0] < board.Contents[j][0] })
+	ll.Title, ll.Date = board.Title, board.Date
+	ll.Save()
+	heading := board.Title + " | " + board.Owner
+	if change {
+		heading += " ^new"
+	}
+	pterm.DefaultSection.Println(heading)
+	fmt.Println("")
+
+	btp := &pterm.BasicTextPrinter{}
+	highlight := btp.WithStyle(&pterm.ThemeDefault.SuccessMessageStyle)
+	first, last := pageRange(len(board.Contents), searchstring != "")
+	for i := first; i <= last; i++ {
+		row := board.Contents[i] // always [timestamp, text, author] - see validRows
+		mentioned := strings.Contains(row[1], "@"+username)
+		if linksOnly {
+			if link := grabgeminiurl(row[1]); link != "" {
+				line := strconv.Itoa(i) + ") " + link
+				if mentioned {
+					color.Cyan(line)
+				} else {
+					fmt.Println(line)
+				}
+			}
+			continue
+		}
+		if searchstring != "" && !strings.Contains(row[1], searchstring) && !strings.Contains(row[0], searchstring) {
+			continue
+		}
+		line := row[0] + " <" + row[2] + "> " + row[1]
+		if mentioned {
+			highlight.Println(line)
+		} else {
+			btp.Println(line)
+		}
+	}
+	fmt.Printf("\nBoard length: %d, showing %d to %d\n\n", len(board.Contents), first, last)
 	return true
 }
 
-//Delete a board in BB. Only works if nobody else has viewed the board. Only sudo / root can delete regardless of this.
+// Delete a board in BB. Only works if nobody else has viewed the board. Only sudo / root can delete regardless of this.
 func (b *BB) delboard(i int) {
 	var real bool
 	for index := range b.B {
@@ -926,9 +833,11 @@ func (b *BB) anoncollect() {
 	B := *b
 	for index := range B.B {
 		for index2 := range an.Title {
-			if B.B[index].Title == an.Title[index2] {
-				for index3 := range an.Board[index2].Contents {
-					B.B[index].Contents = append(B.B[index].Contents, an.Board[index2].Contents[index3])
+			if B.B[index].Title == an.Title[index2] && B.B[index].Date == an.Date[index2] {
+				for _, row := range an.Board[index2].Contents {
+					if !hasRow(B.B[index].Contents, row) {
+						B.B[index].Contents = append(B.B[index].Contents, row)
+					}
 				}
 			}
 		}
@@ -936,12 +845,12 @@ func (b *BB) anoncollect() {
 	*b = B
 }
 
-//Collect all data from every user to load into BB - making sure to order boards by date created.
+// Collect all data from every user to load into BB - making sure to order boards by date created.
 func (b *BB) collect(homeuser string) {
 	ownercount := make(map[string][]string)
-	homepath := "/home/" + homeuser + "/.bb/"
+	homepath := homeroot + homeuser + "/.bb/"
 	B := *b
-	learnfolder, err := ioutil.ReadDir(homepath)
+	learnfolder, err := os.ReadDir(homepath)
 	if err == nil {
 		for _, learnfile := range learnfolder {
 			Ex := filepath.Ext(learnfile.Name())
@@ -957,8 +866,10 @@ func (b *BB) collect(homeuser string) {
 					if B.B[index].Title == x.Title && B.B[index].Date == x.Date {
 						ownercount[x.Title] = append(ownercount[x.Title], x.Owner)
 						chk = true
+						// Skip only exact repeats (same time, text and author): different users,
+						// or the same user twice, can post the same text.
 						for index2 := range x.Contents {
-							if !alreadyhas(B.B[index].Contents, x.Contents[index2][1]) {
+							if !hasRow(B.B[index].Contents, x.Contents[index2]) {
 								B.B[index].Contents = add2slice(&B.B[index].Contents, x.Contents[index2])
 							}
 						}
@@ -966,15 +877,7 @@ func (b *BB) collect(homeuser string) {
 				}
 				for key, element := range ownercount {
 					if len(element) > 1 {
-						var users string
-						for index := range element {
-							if index != len(element) {
-								users += element[index] + ","
-							} else {
-								users += element[index]
-							}
-						}
-						fmt.Printf("Topic '%s' ownership has been tampered with %d times, potential owners are: %s\n", key, len(element)-1, users) //You could add a log here
+						fmt.Printf("Topic '%s' ownership has been tampered with %d times, potential owners are: %s\n", key, len(element)-1, strings.Join(element, ", ")) //You could add a log here
 						fmt.Scanln()
 					}
 				}
@@ -992,61 +895,38 @@ func (b *BB) collect(homeuser string) {
 
 // BB ADD TO BOARD AND 'BOT' LOGIC - i.e BB can interpret input and add additional content / do actions on back of it.
 func (b *BB) addtoboard(input, title, date string, anon bool) {
-	botindex := 0
+	botindex := -1
 	for index := range b.B {
 		if b.B[index].Title == title && b.B[index].Date == date {
 			botindex = index
 			break
 		}
 	}
-	if strings.Contains(input, "http://") || strings.Contains(input, "https://") {
-		rxRelaxed := xurls.Relaxed()
-		astring := rxRelaxed.FindString(input)
-		if astring != "" { //--------------------------HTTP grap input print out a fancy Title
-			httpTitle := bot.HTTPget(astring)
-			b.addURLtitle(botindex, httpTitle, input, title, date, anon)
-		}
-	} else if strings.Contains(input, "gemini://") {
-		rxRelaxed := xurls.Relaxed()
-		astring := rxRelaxed.FindString(input)
-		if astring != "" { //--------------------------GEM grap input print out a fancy Title
-			httpTitle := bot.GEMGet("gemi" + astring)
-			b.addURLtitle(botindex, httpTitle, input, title, date, anon)
-		}
-	} else {
-		item := []string{}
-		item = append(item, timestamp())
-		if anon {
-			item = append(item, addons.Parse(input))
-			item = append(item, "???")
-			an.Add(title, date, item)
+	if botindex < 0 {
+		fmt.Println("board not found (it may have been deleted or archived) - open a board first. Message not posted.")
+		return
+	}
+	text := clean(addons.Parse(input))
+	if link := firstURL(input, "http://", "https://", "gemini://"); link != "" { // add the page's title to the message
+		var linkTitle string
+		if strings.HasPrefix(link, "gemini://") {
+			linkTitle = bot.GEMGet(link)
 		} else {
-			item = append(item, addons.Parse(input))
-			item = append(item, username)
-			b.B[botindex].Contents = append(b.B[botindex].Contents, item)
+			linkTitle = bot.HTTPget(link)
+		}
+		if linkTitle = strings.TrimSpace(clean(linkTitle)); linkTitle != "" {
+			text += " | Title: " + linkTitle
 		}
 	}
+	if anon {
+		postAnon(title, date, []string{timestamp(), text, "???"})
+		return
+	}
+	b.B[botindex].Contents = append(b.B[botindex].Contents, []string{timestamp(), text, username})
 	b.B[botindex].Save(b.B[botindex].Title)
 }
 
-//adds the URL title of a website to the end of a user's input.
-func (b *BB) addURLtitle(botindex int, input, userinput, title, date string, anon bool) {
-	B := *b
-	item := []string{}
-	item = append(item, timestamp())
-	if anon {
-		item = append(item, addons.Parse(userinput)+" | Title: "+input)
-		item = append(item, "???")
-		an.Add(title, date, item)
-	} else {
-		item = append(item, addons.Parse(userinput)+" | Title: "+input)
-		item = append(item, username)
-		B.B[botindex].Contents = append(B.B[botindex].Contents, item)
-	}
-	*b = B
-}
-
-//Board is the struct that holds all data about a specific board
+// Board is the struct that holds all data about a specific board
 type Board struct {
 	Date     string
 	Owner    string
@@ -1054,10 +934,16 @@ type Board struct {
 	Contents [][]string
 }
 
+// Load a board file. These live in other users' home folders, so malformed rows are dropped
+// and all text is cleaned of terminal escape codes before anyone sees it.
 func (b *Board) Load(filename string) {
 	item := *b
-	jsonFile, _ := ioutil.ReadFile(filename)
+	jsonFile, _ := os.ReadFile(filename)
 	_ = json.Unmarshal([]byte(jsonFile), &item)
+	item.Title = clean(item.Title)
+	item.Owner = clean(item.Owner)
+	item.Date = clean(item.Date)
+	item.Contents = validRows(item.Contents)
 	*b = item
 }
 
@@ -1065,14 +951,14 @@ func (b Board) Delete(filename string) { //ONLY WORKS FOR ROOT AND SUDO USERS
 	var afilepath string
 	list := ufolderlist()
 	for index := range list {
-		afilepath = "/home/" + list[index] + "/.bb/"
+		afilepath = homeroot + list[index] + "/.bb/"
 		bb.collect(list[index])
-		files, err := ioutil.ReadDir(afilepath)
+		files, err := os.ReadDir(afilepath)
 		if err != nil {
 			continue //Maybe this user has not actually used BB yet!
 		}
 		for _, f := range files {
-			if strings.Split(f.Name(), ".")[0] == filename {
+			if f.Name() == filename+".json" { // titles may contain dots, so match the whole name
 				e := os.Remove(afilepath + f.Name())
 				if e != nil {
 					fmt.Println("Cannot delete. Ask a moderator to archive if needed.")
@@ -1085,7 +971,7 @@ func (b Board) Delete(filename string) { //ONLY WORKS FOR ROOT AND SUDO USERS
 	}
 }
 
-//Save the board
+// Save the board
 func (b Board) Save(filename string) {
 	Base := &b
 	tempboard := Board{}
@@ -1104,118 +990,92 @@ func (b Board) Save(filename string) {
 		fmt.Println(err)
 		return
 	}
-	err = ioutil.WriteFile(homefilepath+filename+".json", output, 0644)
+	err = os.WriteFile(homefilepath+filename+".json", output, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-//View the entire BB
+// View the entire BB
 func ViewBB(search string, in *os.File, speed int) {
 	if in == nil {
 		in = os.Stdin
 	}
+	// One scanner for the whole session (shared with Viewboard): a new scanner per prompt
+	// throws away whatever the old one had buffered, which loses lines of piped input.
+	scanner := bufio.NewScanner(in)
 	ticker := time.NewTicker(time.Duration(speed) * time.Millisecond)
-	for {
-		select {
-		case <-ticker.C:
-			{
-				callclear()
-				bb.loadall(aa, search)
-				search = ""
-				fmt.Printf("--enter 'h' for help--\n")
-				fmt.Printf("Pick Index >> ")
-				Scanner := bufio.NewScanner(in)
-				Scanner.Scan()
-				results := Scanner.Text()
-				switch results {
-				case "b":
-					fmt.Printf("Enter client name/path > ")
-					Scanner.Scan()
-					per.Browser = Scanner.Text()
-					per.Save()
-					continue
-				case "q":
-					aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-					aa.Save()              //Save snapshot to file
-					return
-				case "r":
-					aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
-					aa.Save()              //Save snapshot to file
-					rehash()
-					continue
-				case "w":
-					back += length
-					if len(bb.B) <= length {
-						back = 0
-					} else {
-						if back > len(bb.B)-length {
-							back = len(bb.B) - length
-						}
-					}
-					continue
-				case "s":
-					back -= length
-					if back < 0 {
-						back = 0
-					}
-					continue
-				case "h":
-					callclear()
-					fmt.Println(helpstring)
-					Scanner.Scan()
-					continue
-				}
-				if len(results) > 3 {
-					if len(results) > 4 {
-						if results[0:3] == "new" {
-							newboard(results[4:], bb)
-							continue
-						}
-						if results[0:3] == "del" {
-							index, _ := strconv.Atoi(results[4:])
-							bb.delboard(index)
-							continue
-						}
-						if results[0:3] == "fil" {
-							search = string(results[4:])
-							continue
-						}
-					}
-					if len(results) > 5 {
-						if results[0:4] == "pin+" {
-							index, _ := strconv.Atoi(string(results[5:]))
-							if ismod {
-								pin.Add(index)
-							}
-							continue
-						}
-						if results[0:4] == "pin-" {
-							index, _ := strconv.Atoi(string(results[5:]))
-							if ismod {
-								pin.Remove(index)
-							}
-							continue
-						}
-					}
-				} else {
-					if results != "" {
-						index, _ := strconv.Atoi(results)
-						back = 0
-						Viewboard(index, search, in)
-						continue
-					}
-				}
+	defer ticker.Stop()
+	quit := func() {
+		aa = bb.saveSnapshot() //Create snapshot of whatever BB currently is
+		aa.Save()              //Save snapshot to file
+	}
+	for range ticker.C {
+		callclear()
+		bb.loadall(aa, search)
+		search = ""
+		fmt.Printf("--enter 'h' for help--\n")
+		fmt.Printf("Pick Index >> ")
+		if !scanner.Scan() { // end of input (ctrl-d) - previously this redrew forever
+			quit()
+			return
+		}
+		results := strings.TrimSpace(scanner.Text())
+		switch {
+		case results == "b":
+			fmt.Printf("Enter client name/path > ")
+			if scanner.Scan() {
+				per.Browser = strings.TrimSpace(scanner.Text())
+				per.Save()
+			}
+		case results == "q":
+			quit()
+			return
+		case results == "r":
+			quit()
+			rehash()
+		case results == "w":
+			back += length
+			if len(bb.B) <= length {
+				back = 0
+			} else if back > len(bb.B)-length {
+				back = len(bb.B) - length
+			}
+		case results == "s":
+			back -= length
+			if back < 0 {
+				back = 0
+			}
+		case results == "h":
+			callclear()
+			fmt.Println(helpstring)
+			scanner.Scan()
+		case strings.HasPrefix(results, "new "):
+			newboard(results[4:], bb)
+		case strings.HasPrefix(results, "del "):
+			if index, err := strconv.Atoi(strings.TrimSpace(results[4:])); err == nil {
+				bb.delboard(index)
+			}
+		case strings.HasPrefix(results, "fil "):
+			search = strings.TrimSpace(results[4:])
+		case strings.HasPrefix(results, "pin+ "):
+			if index, err := strconv.Atoi(strings.TrimSpace(results[5:])); err == nil && ismod {
+				pin.Add(index)
+			}
+		case strings.HasPrefix(results, "pin- "):
+			if index, err := strconv.Atoi(strings.TrimSpace(results[5:])); err == nil && ismod {
+				pin.Remove(index)
+			}
+		default:
+			if index, err := strconv.Atoi(results); err == nil { // anything else that isn't a number is ignored
+				back = 0
+				Viewboard(index, search, scanner)
 			}
 		}
 	}
 }
 
-func Viewboard(index int, search string, in *os.File) {
-	if in == nil {
-		in = os.Stdin
-	}
-	Scanner := bufio.NewScanner(in)
+func Viewboard(index int, search string, scanner *bufio.Scanner) {
 	for {
 		callclear()
 		real := bb.loadboard(index, search)
@@ -1224,65 +1084,60 @@ func Viewboard(index int, search string, in *os.File) {
 		}
 		search = ""
 		fmt.Printf("Add >> ")
-		Scanner.Scan()
-		if Scanner.Text() != "" {
-			if len(Scanner.Text()) > 3 {
-				if Scanner.Text()[0:3] == "fil" && len(Scanner.Text()) > 4 {
-					search = string(Scanner.Text()[4:])
-					continue
-				}
-				if Scanner.Text()[0:4] == "anon" && len(Scanner.Text()) > 5 {
-					bb.addtoboard(Scanner.Text()[5:], ll.Title, ll.Date, true)
-					rehash()
-					continue
-				}
-			}
-			if Scanner.Text() == "w" {
-				back += length
-				if len(bb.B[index].Contents) <= length {
-					back = 0
-				} else {
-					if back > len(bb.B[index].Contents)-length {
-						back = len(bb.B[index].Contents) - length
-					}
-				}
-			}
-			if Scanner.Text() == "h" || Scanner.Text() == "H" {
-				callclear()
-				fmt.Println(helpstring)
-				fmt.Scanln()
-				continue
-			}
-			if Scanner.Text() == "s" {
-				back -= length
-				if back < 0 {
-					back = 0
-				}
-			}
-			if Scanner.Text() == "l" {
-				callclear()
-				bb.viewurl(index)
-				fmt.Printf("client + URL Index >> ")
-				Scanner.Scan()
-				urlindex, _ := strconv.Atoi(Scanner.Text())
-				url := bb.loadgem(index, urlindex)
-				intmux(url, per.Browser)
-				fmt.Println("Opening browser. Press anything to continue.")
-				fmt.Scanln()
-				continue
-			}
-			if Scanner.Text() == "r" || Scanner.Text() == "fil" || Scanner.Text() == "anon" || Scanner.Text() == "w" || Scanner.Text() == "s" {
-				rehash()
-				continue
-			} else if Scanner.Text() == "q" {
-				back = 0
-				break
-			} else {
-				bb.addtoboard(Scanner.Text(), ll.Title, ll.Date, false)
-			}
-		} else {
-			back = 0
+		if !scanner.Scan() { // end of input
 			break
+		}
+		text := scanner.Text()
+		cmd := strings.TrimSpace(text)
+		// Commands only match as a whole word, so messages like "file...", "anonymous..." or "review..." post normally.
+		switch {
+		case cmd == "" || cmd == "q":
+			back = 0
+			rehash()
+			return
+		case strings.HasPrefix(text, "fil ") && strings.TrimSpace(text[4:]) != "":
+			search = strings.TrimSpace(text[4:])
+			continue
+		case strings.HasPrefix(text, "anon ") && strings.TrimSpace(text[5:]) != "":
+			bb.addtoboard(text[5:], ll.Title, ll.Date, true)
+		case cmd == "w":
+			back += length
+			if len(bb.B[index].Contents) <= length {
+				back = 0
+			} else if back > len(bb.B[index].Contents)-length {
+				back = len(bb.B[index].Contents) - length
+			}
+		case cmd == "s":
+			back -= length
+			if back < 0 {
+				back = 0
+			}
+		case cmd == "h" || cmd == "H":
+			callclear()
+			fmt.Println(helpstring)
+			scanner.Scan()
+			continue
+		case cmd == "l":
+			callclear()
+			bb.viewurl(index)
+			fmt.Printf("client + URL Index >> ")
+			if !scanner.Scan() {
+				break
+			}
+			if urlindex, err := strconv.Atoi(strings.TrimSpace(scanner.Text())); err == nil {
+				if url := bb.loadgem(index, urlindex); url != "" {
+					intmux(url, per.Browser)
+					fmt.Println("Opening browser. Press ENTER to continue.")
+				} else {
+					fmt.Println("No gemini link at that index. Press ENTER to continue.")
+				}
+				scanner.Scan()
+			}
+			continue
+		case cmd == "r" || cmd == "fil" || cmd == "anon":
+			// just refresh
+		default:
+			bb.addtoboard(text, ll.Title, ll.Date, false)
 		}
 		rehash()
 	}
@@ -1318,6 +1173,7 @@ func initiateBB(input []string) {
 	u, err := user.Current()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	dirs := strings.Split(u.HomeDir, "/")
 	if len(dirs) == 3 {
@@ -1326,25 +1182,15 @@ func initiateBB(input []string) {
 	if !check(username) {
 		return
 	}
+	setPaths()
 	pin.Load()
 	an.Load()
 	mm.Load()
 	mm.IsMod()
-	homefilepath = "/home/" + username + "/.bb/"
-	snapfilepath = "/home/" + username + "/.bbsn/"
-	modfilepath = "/home/" + username + "/.bbmod/"
-	err = os.Mkdir("/home/"+username+"/.bb", 0777)
-	if err != nil {
-		//
-	}
-	err = os.Mkdir("/home/"+username+"/.bbsn", 0777)
-	if err != nil {
-		//
-	}
-	err = os.Mkdir("/home/"+username+"/.bbmod/", 0777)
-	if err != nil {
-		//
-	}
+	// These usually exist already; errors are ignored on purpose.
+	_ = os.Mkdir(homefilepath, 0777)
+	_ = os.Mkdir(snapfilepath, 0777)
+	_ = os.Mkdir(modfilepath, 0777)
 	per.Load()
 	bb.Load()
 	aa.Load()
@@ -1386,8 +1232,8 @@ func initiateBB(input []string) {
 			}
 			if input[1] == "init" { //for ADMIN only - do this once at the start of BB
 				if username == admin {
-					savedUmask := syscall.Umask(0)
-					err := os.Mkdir("/home/"+username+"/.bbmod", 0777)
+					savedUmask := setUmask(0)
+					err := os.Mkdir(homeroot+username+"/.bbmod", 0777)
 					if err != nil {
 						fmt.Println(err)
 					}
@@ -1396,7 +1242,7 @@ func initiateBB(input []string) {
 					mm.Save()
 					pin.Save()
 					an.Save()
-					_ = syscall.Umask(savedUmask) // Return the umask to the original
+					_ = setUmask(savedUmask) // Return the umask to the original
 					fmt.Println("the files have now either been created & bb is initiated - or they already existed!")
 				} else {
 					fmt.Println("you tried to initiate bb - but you are not the admin. The admin is: " + admin)
