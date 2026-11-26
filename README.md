@@ -1,6 +1,6 @@
 # bb for LINUX
 Built this initially over 10 days to serve as a 
-bulletin board for pubnix: https://heathens.club/
+bulletin board for pubnix: https://heathens.club/ (which sadly no longer exists)
 
 I have refactored it a bit since then & added some tests.
 
