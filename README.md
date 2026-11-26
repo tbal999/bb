@@ -20,6 +20,10 @@ Updates:
   anon posts no longer get overwritten, repeated messages no longer dropped, commands like `fil`/`anon`/`rev`
   need a space so "file..."/"anonymous..."/"review..." post normally, terminal escape codes are stripped,
   real tests, Go 1.21+
+- 26/11/2026 restructure: code split into files around one App struct, stricter command line,
+  `bb mod list` / `bb mod restore`, simultaneous anon posts and pins no longer clobber each other (file
+  locking), nobody can fake boards or messages in someone else's name, delete no longer half-deletes.
+  Files are stored in a clearer format - see "Upgrading" below.
 
 How BB looks:
 ```
@@ -74,31 +78,33 @@ You'll then have an up and running pubnix bulletin board.
 
 Then simply place the bb exec to your bin, and make the application accessible by all users. Ta-da, you have your own private bulletin board on your pubnix.
 
-ARGS instructions:
+Upgrading from a pre-2026 bb: just replace the binary. Old files are still read, and each one is
+rewritten in the new format the next time it is saved. Don't go back to an old binary afterwards -
+it can't read the new format. Two things behave differently on purpose:
+- a board only shows up if its owner's own file is still there. Boards whose owner deleted them under
+  the old "delete" (which removed the owner's copy and then failed on everyone else's) now stay gone.
+- messages only count if they are in their author's own file, so nobody can post as someone else.
+
+ARGS instructions (one at a time):
 
 ```
-Usage of ./bb:
-  -a string
-        Add input to board you were last accessing
-  -c string
-        Title of new board you want to create (one word only)
-  -l int
-        Index of board you want to load (default 99999)
-  -p
-        Print all boards
-        No args for interactive mode
-        Only 1 arg at a time allowed
+  bb                  interactive mode (h for help)
+  bb -p               print all boards
+  bb -c title         create a board
+  bb -l index         print a board (and make it the one -a posts to)
+  bb -a text          add text to the board you last opened
+  bb u                list boards with new posts since you last looked
 
-  u     list boards with new posts since you last looked
+Moderators:
+  bb mod              show your status and the list of moderators
+  bb mod del index    archive a board (see bb -p for indexes)
+  bb mod list         list archived boards
+  bb mod restore n    restore a board you archived (n from bb mod list)
 
-For administration/moderation:
-
-        bb mod             -- show your status and the list of moderators
-        bb mod del index   -- archive a board at specific index (moderators)
-                              (use standard -p arg to print board and select index)
-        bb mod + user      -- make user a moderator (admin only)
-        bb mod - user      -- remove user as a moderator (admin only)
-
+Admin:
+  bb init             set up bb (once)
+  bb mod + user       make user a moderator
+  bb mod - user       remove user as a moderator
 ```
 
 Interactive Instructions:
@@ -107,8 +113,8 @@ for INDEX section:
 	<number> - open the board at that index
 	new - create a new board i.e 'new topictitle'
 	del - delete a board by index i.e 'del 3'
-		If nobody else has accessed it - you can delete it. 
-	        Otherwise, you need superuser permission.
+		Only your own boards, and only while nobody else has posted on them.
+		Otherwise ask a moderator to archive it.
 	fil - filter index by search string e.g 'fil 2021-02' or 'fil Title'
 	pin+ - pin a board by index i.e 'pin+ 3' (moderators)
 	pin- - unpin a board by index i.e 'pin- 3' (moderators)

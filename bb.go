@@ -24,5 +24,5 @@ var (
 )
 
 func main() {
-	initiateBB(os.Args)
+	os.Exit(run(Config{Admin: admin, Title: boardtitle, HomeRoot: "/home/"}, os.Args[1:], os.Stdin))
 }

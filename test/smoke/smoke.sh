@@ -90,6 +90,24 @@ run alice "bb -l 0"
 has "alice's anon post survives bob's session" "$OUT" "<???> from alice"
 has "bob's anon post shows" "$OUT" "<???> from bob"
 
+echo "== many anon posts at the same moment"
+before=$(grep -o '"Text"' /home/admin/.bbmod/bban0n.json | wc -l)
+for i in $(seq 1 25); do
+	for u in alice bob; do
+		printf '0\nanon burst %s %s\n\nq\n' "$u" "$i" | su -s /bin/bash "$u" -c bb >/dev/null 2>&1 &
+	done
+done
+wait
+after=$(grep -o '"Text"' /home/admin/.bbmod/bban0n.json | wc -l)
+if [ $((after - before)) -eq 50 ]; then ok "50 simultaneous anon posts all kept (file locking)"; else bad "simultaneous anon posts: $((after - before)) of 50 kept"; fi
+
+echo "== command line"
+run alice "bb -p -c oops"
+has "one option at a time" "$OUT" "use one option or command at a time"
+run alice "bb anything del 0"
+has "unknown commands are rejected (used to archive)" "$OUT" "unknown command"
+[ ! -f /home/alice/.bb/oops.json ] && ok "a rejected command does nothing" || bad "oops.json was created"
+
 echo "== pins"
 run admin "bb" "pin+ 0\nq\n"
 run alice "bb -p"
@@ -102,11 +120,16 @@ has "non-moderators can't unpin from bb" "$OUT" "**PINNED**"
 echo "== hostile board file"
 cat >/home/bob/.bb/general.json <<EOF
 {"Title":"general","Owner":"alice","Date":"$today","Contents":[[],["one field"],
- ["$today 23:59:59","\u001b]0;pwned\u0007\u001b[2Jgotcha","bob"]]}
+ ["$today 23:59:59","\u001b]0;pwned\u0007\u001b[2Jgotcha","bob"],
+ ["$today 23:59:58","alice here: bob is right","alice"]]}
 EOF
+echo '{"Title":"from alice","Owner":"alice","Date":"'"$today"'","Messages":[]}' >"/home/bob/.bb/from alice.json"
 run alice "bb -l 0"
 has "malformed rows don't crash bb" "$OUT" "<bob> gotcha"
 hasnt "escape codes from other users are stripped" "$OUT" "pwned"
+hasnt "messages signed as someone else are ignored" "$OUT" "bob is right"
+run alice "bb -p"
+hasnt "boards claimed for someone else are ignored" "$OUT" "from alice |"
 
 echo "== deleting"
 run alice "bb -c scratch"
@@ -119,6 +142,8 @@ hasnt "deleted board is gone from the index" "$OUT" ") scratch |"
 idx=$(index_of general)
 run bob "bb" "del $idx\nq\n"
 has "bob can't delete alice's board" "$OUT" "you are not owner of topic"
+run alice "bb" "del $idx\nq\n"
+has "alice can't delete a board others have posted on" "$OUT" "others have posted on general"
 [ -f /home/alice/.bb/general.json ] && ok "alice's board file is untouched" || bad "alice's general.json was deleted"
 
 echo "== moderation"
@@ -140,6 +165,16 @@ has "non-moderators can't archive" "$OUT" "general | author: alice"
 run bob "bb mod del $idx"
 run alice "bb -p"
 hasnt "a moderator can archive a board" "$OUT" "general | author: alice"
+run bob "bb mod list"
+has "moderators can list archived boards" "$OUT" "0) general | $today | archived by bob"
+run alice "bb mod list"
+has "non-moderators can't list archived boards" "$OUT" "only moderators"
+run admin "bb mod restore 0"
+has "only the archiving moderator can restore" "$OUT" "archived by bob - only they can restore it"
+run bob "bb mod restore 0"
+run alice "bb -p"
+has "a moderator can restore a board they archived" "$OUT" "general | author: alice"
+has "restored board keeps its posts" "$OUT" "| active "
 
 echo
 echo "== $pass passed, $fail failed"
