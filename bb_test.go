@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -261,5 +262,79 @@ func TestDeleteBoardWithDotInTitle(t *testing.T) {
 	bb.delboard(0)
 	if _, err := os.Stat(filepath.Join(root, "alice", ".bb", "v1.2.json")); !os.IsNotExist(err) {
 		t.Fatalf("board file still there: %v", err)
+	}
+}
+
+func TestHomeUser(t *testing.T) {
+	homeroot = "/home/"
+	cases := map[string]string{
+		"/home/alice":      "alice",
+		"/home/alice/":     "alice",
+		"/root":            "",
+		"/home/":           "",
+		"/var/home/alice":  "",
+		"/home/club/alice": "",
+	}
+	for in, want := range cases {
+		if got := homeUser(in); got != want {
+			t.Errorf("homeUser(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestHelpShowsModAndAdminCommandsOnlyToThem(t *testing.T) {
+	setupHome(t)
+	defer func() { ismod = false }()
+	check := func(who string, wantMod, wantAdmin bool) {
+		t.Helper()
+		h := helpText()
+		if strings.Contains(h, "MODERATOR commands") != wantMod || strings.Contains(h, "ADMIN commands") != wantAdmin {
+			t.Errorf("%s: moderator section %v (want %v), admin section %v (want %v)", who,
+				strings.Contains(h, "MODERATOR commands"), wantMod, strings.Contains(h, "ADMIN commands"), wantAdmin)
+		}
+		if !strings.HasSuffix(h, "PRESS ENTER TO CONTINUE...") {
+			t.Errorf("%s: help should end with the enter prompt", who)
+		}
+	}
+	username, ismod = "alice", false
+	check("user", false, false)
+	username, ismod = "bob", true
+	check("moderator", true, false)
+	username, ismod = "admin", true
+	check("admin", true, true)
+}
+
+func TestAgo(t *testing.T) {
+	cases := map[time.Duration]string{
+		-5 * time.Minute:         "just now", // clock skew
+		30 * time.Second:         "just now",
+		3 * time.Minute:          "3m ago",
+		59 * time.Minute:         "59m ago",
+		2 * time.Hour:            "2h ago",
+		47 * time.Hour:           "1d ago",
+		29 * 24 * time.Hour:      "29d ago",
+		150 * 24 * time.Hour:     "5mo ago",
+		2 * 365 * 24 * time.Hour: "2y ago",
+	}
+	for d, want := range cases {
+		if got := ago(d); got != want {
+			t.Errorf("ago(%v) = %q, want %q", d, got, want)
+		}
+	}
+}
+
+func TestLastActive(t *testing.T) {
+	b := Board{Contents: [][]string{
+		{"2026-11-25 09:00:00", "a", "alice"},
+		{"not a time", "b", "mallory"},
+		{"2026-11-25 21:30:00", "c", "bob"},
+		{"2026-11-24 23:00:00", "d", "alice"},
+	}}
+	last, ok := b.lastActive()
+	if want := time.Date(2026, 11, 25, 21, 30, 0, 0, time.Local); !ok || !last.Equal(want) {
+		t.Fatalf("lastActive = %v %v, want %v", last, ok, want)
+	}
+	if _, ok := (Board{}).lastActive(); ok {
+		t.Fatal("a board with no posts has no last activity")
 	}
 }

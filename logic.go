@@ -79,13 +79,24 @@ FYI:
 	- For gemini client functionality you need to run bb inside tmux
 	- Boards glow cyan when new content is posted
 	- New boards glow green.
+	- The date is when a board was created; "active ... ago" is its newest post
 	- You can comment other people via @ sign i.e @person
 		they will see message highlighted
 	- If you are on a board and new content is posted on another board, 
 		you'll see '^new' beside author name
-	
-PRESS ENTER TO CONTINUE...
-					`
+`
+	modhelp = `
+MODERATOR commands (you are a moderator):
+	pin+ / pin- - pin or unpin a board by index (in the INDEX section)
+	bb mod del index - archive a board for everyone (from the shell; see bb -p for indexes)
+	bb mod - show the list of moderators
+`
+	adminhelp = `
+ADMIN commands (you are the admin):
+	bb init - set up the shared files (once)
+	bb mod + user - make user a moderator
+	bb mod - user - remove user as a moderator
+`
 )
 
 // GENERAL FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,6 +124,28 @@ func check(username string) bool {
 	}
 
 	return true
+}
+
+// helpText is the 'h' screen, with the extra commands moderators and the admin can use.
+func helpText() string {
+	text := helpstring
+	if ismod {
+		text += modhelp
+	}
+	if username == admin {
+		text += adminhelp
+	}
+	return text + "\nPRESS ENTER TO CONTINUE..."
+}
+
+// homeUser returns the folder name of a home directory directly inside homeroot
+// (/home/alice -> alice), or "" for anything else (/root, /var/home/alice, ...).
+func homeUser(homeDir string) string {
+	name := strings.TrimSuffix(strings.TrimPrefix(homeDir, homeroot), "/")
+	if !strings.HasPrefix(homeDir, homeroot) || name == "" || strings.Contains(name, "/") {
+		return ""
+	}
+	return name
 }
 
 // Work out where every bb file lives for the admin and the current user.
@@ -685,10 +718,47 @@ func pageRange(n int, searching bool) (first, last int) {
 	return last - length + 1, last
 }
 
+// now is the clock used for "active ... ago" (tests replace it).
+var now = time.Now
+
+// lastActive returns the time of the newest message on the board, or false if there are none.
+// Timestamps that don't parse (hand-edited files) are ignored.
+func (b Board) lastActive() (time.Time, bool) {
+	var last time.Time
+	for _, row := range b.Contents {
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", row[0], time.Local); err == nil && t.After(last) {
+			last = t
+		}
+	}
+	return last, !last.IsZero()
+}
+
+// ago formats a duration as a short "3m ago" style age.
+func ago(d time.Duration) string {
+	switch {
+	case d < time.Minute: // also covers clock skew putting a post slightly in the future
+		return "just now"
+	case d < time.Hour:
+		return strconv.Itoa(int(d/time.Minute)) + "m ago"
+	case d < 24*time.Hour:
+		return strconv.Itoa(int(d/time.Hour)) + "h ago"
+	case d < 30*24*time.Hour:
+		return strconv.Itoa(int(d/(24*time.Hour))) + "d ago"
+	case d < 365*24*time.Hour:
+		return strconv.Itoa(int(d/(30*24*time.Hour))) + "mo ago"
+	default:
+		return strconv.Itoa(int(d/(365*24*time.Hour))) + "y ago"
+	}
+}
+
 // printBoardLine prints one index entry: green if the board is new since the last visit,
 // cyan if it has unread posts.
 func printBoardLine(index int, b Board, s Snap, suffix string) {
-	line := strconv.Itoa(index) + ") " + b.Title + " | author: " + b.Owner + " | " + b.Date + suffix
+	line := strconv.Itoa(index) + ") " + b.Title + " | author: " + b.Owner + " | " + b.Date
+	if last, ok := b.lastActive(); ok {
+		line += " | active " + ago(now().Sub(last))
+	}
+	line += suffix
 	switch {
 	case s.index(b.Title, b.Date) < 0:
 		color.Green(line)
@@ -1048,7 +1118,7 @@ func ViewBB(search string, in *os.File, speed int) {
 			}
 		case results == "h":
 			callclear()
-			fmt.Println(helpstring)
+			fmt.Println(helpText())
 			scanner.Scan()
 		case strings.HasPrefix(results, "new "):
 			newboard(results[4:], bb)
@@ -1114,7 +1184,7 @@ func Viewboard(index int, search string, scanner *bufio.Scanner) {
 			}
 		case cmd == "h" || cmd == "H":
 			callclear()
-			fmt.Println(helpstring)
+			fmt.Println(helpText())
 			scanner.Scan()
 			continue
 		case cmd == "l":
@@ -1175,9 +1245,11 @@ func initiateBB(input []string) {
 		fmt.Println(err)
 		return
 	}
-	dirs := strings.Split(u.HomeDir, "/")
-	if len(dirs) == 3 {
-		username = dirs[2]
+	username = homeUser(u.HomeDir)
+	if username == "" {
+		// Without a /home/<name> folder there is nowhere to store posts, so they would silently vanish.
+		fmt.Printf("bb needs your home folder to be %s<username>, but yours is %s (root can't use bb - su to a user first).\n", homeroot, u.HomeDir)
+		return
 	}
 	if !check(username) {
 		return

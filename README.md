@@ -24,11 +24,11 @@ Updates:
 How BB looks:
 ```
 -- Pubnix BB --
-0) pinned board! | author: tom | 2021-02-12 **PINNED**
+0) pinned board! | author: tom | 2021-02-12 | active 2d ago **PINNED**
 
-3) testboard 3 | author: tom | 2021-02-12
+3) testboard 3 | author: tom | 2021-02-12 | active 3m ago
 2) testboard 2 | author: tom | 2021-02-12
-1) testboard 1 | author: tom | 2021-02-12
+1) testboard 1 | author: tom | 2021-02-12 | active 5mo ago
 
 BB Length: 4, showing 0 to 3
 
@@ -61,9 +61,11 @@ Instructions:
 Once you've done that, just build it (needs Go 1.21+) & run it i.e
 ```
 go build -o bb .     (or: make build)
-make test            (vet + tests; make docker runs them in a Linux container)
-make smoke           (the above, plus a container with real users admin/alice/bob
+make test            (vet + tests)
+make smoke           (the above in a Linux container, plus real users admin/alice/bob
                       driving bb against each other - see test/smoke/smoke.sh)
+make demo            (a shell on that fake pubnix with some boards to play with:
+                      su - alice, then bb. tmux is there to be two users at once)
 ```
 
 Then run "./bb init" once to initialise all the necessary folders.
@@ -133,6 +135,7 @@ FYI:
 	- For gemini client functionality you need to run bb inside tmux
 	- Boards glow cyan when new content is posted
 	- New boards glow green.
+	- The date is when a board was created; "active ... ago" is its newest post
 	- You can comment other people via @ sign i.e @person
 		they will see message highlighted
 	- If you are on a board and new content is posted on another board, 
